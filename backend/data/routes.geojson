@@ -3,27 +3,168 @@
   "features": [
     {
       "type": "Feature",
-      "properties": { "transport": "sea" },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-74, 40], [-60, 30]]
-      }
+      "properties": {
+        "name": "Shanghai",
+        "country": "China",
+        "modes": ["sea", "air", "rail", "truck"]
+      },
+      "geometry": { "type": "Point", "coordinates": [121.4737, 31.2304] }
     },
     {
       "type": "Feature",
-      "properties": { "transport": "air" },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-80, 35], [-50, 20]]
-      }
+      "properties": {
+        "name": "Los Angeles",
+        "country": "USA",
+        "modes": ["sea", "air", "truck"]
+      },
+      "geometry": { "type": "Point", "coordinates": [-118.2437, 34.0522] }
     },
     {
       "type": "Feature",
-      "properties": { "transport": "truck" },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-74.006, 40.7128], [-75.1652, 39.9526]]
-      }
+      "properties": {
+        "name": "Hamburg",
+        "country": "Germany",
+        "modes": ["sea", "rail", "truck"]
+      },
+      "geometry": { "type": "Point", "coordinates": [9.9937, 53.5511] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mumbai",
+        "country": "India",
+        "modes": ["sea", "air", "rail"]
+      },
+      "geometry": { "type": "Point", "coordinates": [72.8777, 19.0760] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "New York",
+        "country": "USA",
+        "modes": ["air", "rail", "truck"]
+      },
+      "geometry": { "type": "Point", "coordinates": [-74.0060, 40.7128] }
+    },
+
+
+
+
+
+
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Shanghai",
+        "to": "Los Angeles",
+        "transport": "sea",
+        "emission_per_ton_km": 15,
+        "speed_km_h": 35
+      },
+      "geometry": { "type": "LineString", "coordinates": [[121.4737, 31.2304], [-118.2437, 34.0522]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Los Angeles",
+        "to": "Shanghai",
+        "transport": "sea",
+        "emission_per_ton_km": 15,
+        "speed_km_h": 35
+      },
+      "geometry": { "type": "LineString", "coordinates": [[-118.2437, 34.0522], [121.4737, 31.2304]] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Shanghai",
+        "to": "Hamburg",
+        "transport": "sea",
+        "emission_per_ton_km": 10,
+        "speed_km_h": 30
+      },
+      "geometry": { "type": "LineString", "coordinates": [[121.4737, 31.2304], [9.9937, 53.5511]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Hamburg",
+        "to": "Shanghai",
+        "transport": "sea",
+        "emission_per_ton_km": 10,
+        "speed_km_h": 30
+      },
+      "geometry": { "type": "LineString", "coordinates": [[9.9937, 53.5511], [121.4737, 31.2304]] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Hamburg",
+        "to": "New York",
+        "transport": "air",
+        "emission_per_ton_km": 52,
+        "speed_km_h": 800
+      },
+      "geometry": { "type": "LineString", "coordinates": [[9.9937, 53.5511], [-74.0060, 40.7128]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "New York",
+        "to": "Hamburg",
+        "transport": "air",
+        "emission_per_ton_km": 52,
+        "speed_km_h": 800
+      },
+      "geometry": { "type": "LineString", "coordinates": [[-74.0060, 40.7128], [9.9937, 53.5511]] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Mumbai",
+        "to": "Hamburg",
+        "transport": "rail",
+        "emission_per_ton_km": 6,
+        "speed_km_h": 100
+      },
+      "geometry": { "type": "LineString", "coordinates": [[72.8777, 19.0760], [9.9937, 53.5511]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Hamburg",
+        "to": "Mumbai",
+        "transport": "rail",
+        "emission_per_ton_km": 6,
+        "speed_km_h": 100
+      },
+      "geometry": { "type": "LineString", "coordinates": [[9.9937, 53.5511], [72.8777, 19.0760]] }
+    },
+
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "Los Angeles",
+        "to": "New York",
+        "transport": "truck",
+        "emission_per_ton_km": 22,
+        "speed_km_h": 90
+      },
+      "geometry": { "type": "LineString", "coordinates": [[-118.2437, 34.0522], [-74.0060, 40.7128]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "from": "New York",
+        "to": "Los Angeles",
+        "transport": "truck",
+        "emission_per_ton_km": 22,
+        "speed_km_h": 90
+      },
+      "geometry": { "type": "LineString", "coordinates": [[-74.0060, 40.7128], [-118.2437, 34.0522]] }
     }
   ]
 }

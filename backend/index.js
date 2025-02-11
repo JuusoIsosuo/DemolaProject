@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require("cors")
 const fs = require("fs")
 const path = require("path")
+const findBestRoutes = require('./routes')
 
 const PORT = 3000
 
@@ -10,6 +11,11 @@ const app = express()
 app.use(cors())
 
 app.use(express.json())
+
+// Example Usage
+const startCity = "Shanghai";
+const endCity = "New York";
+console.log(findBestRoutes(startCity, endCity));
 
 app.get("/routes", (req, res) => {
   const geojsonPath = path.join(__dirname, "data", "routes.geojson")
