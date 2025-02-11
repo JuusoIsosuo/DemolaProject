@@ -4,34 +4,58 @@
   right: 0;
   bottom: 0;
   left: 0;
+  background-color: #f8fafc;
 }
 
 #map-container {
   height: 100%;
   width: 100%;
-  /* temporarily set the background color so we can tell where the map container is positioned */
-  background-color: lightgrey;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 .sidebar {
-  background-color: rgb(35 55 75 / 90%);
-  color: #fff;
-  padding: 6px 12px;
-  font-family: monospace;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  padding: 1rem 1.5rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   z-index: 1;
   position: absolute;
-  top: 0;
-  left: 0;
-  margin: 12px;
-  border-radius: 4px;
+  top: 1rem;
+  left: 1rem;
+  margin: 0;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+              0 2px 4px -2px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(8px);
+  max-width: 300px;
+  transition: all 0.2s ease;
+}
+
+.sidebar:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+              0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
 .reset-button {
   position: absolute;
-  top: 50px;
+  top: 5rem;
+  left: 1rem;
   z-index: 1;
-  left: 12px;
-  padding: 4px 10px;
-  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px -1px rgb(0 0 0 / 0.1);
+}
+
+.reset-button:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
