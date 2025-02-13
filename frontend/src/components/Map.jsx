@@ -34,7 +34,7 @@ const Map = () => {
     const destCoords = await getCoordinates(destination);
 
     if (originCoords && destCoords) {
-      axios.get(`http://localhost:3000/searoutes?originCoordinates=${originCoords.join(',')}&destinationCoordinates=${destCoords.join(',')}`)
+      axios.get(`http://localhost:3000/searoute?origin=${originCoords.join(',')}&destination=${destCoords.join(',')}`)
         .then((response) => {
           setRouteData(response.data);
         })
