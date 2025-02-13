@@ -2,7 +2,6 @@ import { useRef, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
 import { motion } from 'framer-motion';
-import styled from '@emotion/styled';
 import axios from 'axios';
 
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -10,58 +9,6 @@ import './Map.css';
 
 const API_TOKEN = import.meta.env.VITE_API_TOKEN;
 const GEOCODE_API = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
-
-const RouteForm = styled.div`
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 1rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  backdrop-filter: blur(8px);
-  width: 240px;
-`;
-
-const Input = styled.input`
-  width: 200px;
-  padding: 0.5rem;
-  margin: 0.25rem auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  display: block;
-
-  &:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  }
-`;
-
-const Button = styled.button`
-  width: 200px;
-  padding: 0.5rem;
-  margin: 0.5rem auto 0;
-  background-color: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: block;
-
-  &:hover {
-    background-color: #1d4ed8;
-  }
-
-  &:disabled {
-    background-color: #93c5fd;
-    cursor: not-allowed;
-  }
-`;
 
 const Map = () => {
   const location = useLocation();
@@ -138,7 +85,7 @@ const Map = () => {
 
       if (originCoords && destCoords) {
         const response = await axios.get(
-          `http://localhost:3000/searoutes?originCoordinates=${originCoords.join(',')}&destinationCoordinates=${destCoords.join(',')}`
+          `http://localhost:3000/searoute?origin=${originCoords.join(',')}&destination=${destCoords.join(',')}`
         );
         
         if (map.current.getSource('routes')) {
@@ -155,7 +102,8 @@ const Map = () => {
           id: 'route-sea',
           type: 'line',
           source: 'routes',
-          paint: { 'line-color': 'blue', 'line-width': 3 },
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#006400', 'line-width': 5, 'line-opacity': 0.5 },
           filter: ['==', 'transport', 'sea'],
         });
 
@@ -204,25 +152,27 @@ const Map = () => {
       transition={{ duration: 0.5 }}
       style={{ height: '100vh', position: 'relative' }}
     >
-      <RouteForm>
+      <div className="route-form">
         <form onSubmit={handleSubmit}>
-          <Input
+          <input
+            className="input"
             type="text"
             placeholder="Origin"
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
           />
-          <Input
+          <input
+            className="input"
             type="text"
             placeholder="Destination"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
           />
-          <Button type="submit" disabled={isLoading}>
+          <button className="button" type="submit" disabled={isLoading}>
             {isLoading ? 'Calculating...' : 'Update Route'}
-          </Button>
+          </button>
         </form>
-      </RouteForm>
+      </div>
       <div ref={mapContainer} id="map-container" />
     </motion.div>
   );
