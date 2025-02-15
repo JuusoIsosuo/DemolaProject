@@ -3,7 +3,7 @@ const path = require('path');
 
 
 // Load the GeoJSON file
-const geojson = JSON.parse(fs.readFileSync('./data/routes.geojson', 'utf8'));
+const geojson = JSON.parse(fs.readFileSync('./data/locations.geojson', 'utf8'));
 
 const saveGraph = (graph) => {
   const filePath = path.join(__dirname, 'graph.json');
