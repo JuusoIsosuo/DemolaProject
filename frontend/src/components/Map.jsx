@@ -73,6 +73,7 @@ const Map = () => {
   const [routeData, setRouteData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [routeToShow, setRouteToShow] = useState('green');
 
   // Convert address to coordinates using Mapbox Geocoding API
   const getCoordinates = async (address) => {
@@ -122,40 +123,14 @@ const Map = () => {
 
       if (originCoords && destCoords) {
         const response = await axios.get(
-          `http://localhost:3000/searoutes?originCoordinates=${originCoords.join(',')}&destinationCoordinates=${destCoords.join(',')}`
+          `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}`
         );
         
-        if (map.current.getSource('routes')) {
-          map.current.removeLayer('route-sea');
-          map.current.removeSource('routes');
-        }
-
-        map.current.addSource('routes', {
-          type: 'geojson',
-          data: response.data,
-        });
-
-        map.current.addLayer({
-          id: 'route-sea',
-          type: 'line',
-          source: 'routes',
-          paint: { 'line-color': 'blue', 'line-width': 3 },
-          filter: ['==', 'transport', 'sea'],
-        });
-
-        // Fit the map to the route bounds
-        const coordinates = response.data.features[0].geometry.coordinates;
-        const bounds = coordinates.reduce((bounds, coord) => {
-          return bounds.extend(coord);
-        }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
-
-        map.current.fitBounds(bounds, {
-          padding: 50,
-          pitch: 0,
-          bearing: 0
-        });
+        console.log(response.data)
 
         setRouteData(response.data);
+
+        showRoutes(response.data);
       } else {
         alert("Invalid origin or destination coordinates.");
       }
@@ -176,10 +151,85 @@ const Map = () => {
     }
   }, [mapInitialized, location.state?.shouldCalculateRoute, origin, destination]);
 
+  // Update route that is shown
+  useEffect(() => {
+    if ( routeData ) {
+      showRoutes(routeData);
+    }
+  }, [routeToShow]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     await calculateRoute();
   };
+
+  const showRoutes = (data) => {
+    if (map.current.getSource('routes')) {
+      if (map.current.getLayer('route-sea')) map.current.removeLayer('route-sea');
+      if (map.current.getLayer('route-air')) map.current.removeLayer('route-air');
+      if (map.current.getLayer('route-truck')) map.current.removeLayer('route-truck');
+      if (map.current.getLayer('route-rail')) map.current.removeLayer('route-rail');
+      
+      map.current.removeSource('routes');
+    }
+
+    if ( routeToShow === 'green' ) {
+      map.current.addSource('routes', {
+        type: 'geojson',
+        data: data.lowestEmission.geojson,
+      });
+    } 
+    else if ( routeToShow === 'fast' ) {
+      map.current.addSource('routes', {
+        type: 'geojson',
+        data: data.fastest.geojson,
+      });
+    }
+
+    map.current.addLayer({
+      id: 'route-sea',
+      type: 'line',
+      source: 'routes',
+      paint: { 'line-color': 'blue', 'line-width': 3 },
+      filter: ['==', 'transport', 'sea'],
+    });
+
+    map.current.addLayer({
+      id: 'route-air',
+      type: 'line',
+      source: 'routes',
+      paint: { 'line-color': 'red', 'line-width': 3 },
+      filter: ['==', 'transport', 'air'],
+    });
+
+    map.current.addLayer({
+      id: 'route-truck',
+      type: 'line',
+      source: 'routes',
+      paint: { 'line-color': 'black', 'line-width': 3 },
+      filter: ['==', 'transport', 'truck'],
+    });
+
+    map.current.addLayer({
+      id: 'route-rail',
+      type: 'line',
+      source: 'routes',
+      paint: { 'line-color': 'green', 'line-width': 3 },
+      filter: ['==', 'transport', 'rail'],
+    });
+
+    // Fit the map to the route bounds
+    const coordinates = data.fastest.geojson.features[0].geometry.coordinates;
+    const bounds = coordinates.reduce((bounds, coord) => {
+      return bounds.extend(coord);
+    }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+
+    map.current.fitBounds(bounds, {
+      padding: 50,
+      pitch: 0,
+      bearing: 0
+    });
+  }
 
   return (
     <motion.div
@@ -208,6 +258,9 @@ const Map = () => {
         </form>
       </RouteForm>
       <div ref={mapContainer} id="map-container" />
+      <Button type="button" onClick={() => routeToShow === "green" ? setRouteToShow("fast") : setRouteToShow("green")}>
+        {routeToShow === "green" ? "Show Fastest Route" : "Show Greenest Route"}
+      </Button>
     </motion.div>
   );
 };

@@ -1,29 +1,27 @@
 {
   "type": "FeatureCollection",
   "features": [
-    {
-      "type": "Feature",
-      "properties": { "transport": "sea" },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-74, 40], [-60, 30]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": { "transport": "air" },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-80, 35], [-50, 20]]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": { "transport": "truck" },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [[-74.006, 40.7128], [-75.1652, 39.9526]]
-      }
-    }
+    { "type": "Feature", "properties": { "name": "Helsinki", "country": "Finland", "modes": ["truck", "sea", "air", "rail"], "network": "European Rail" }, "geometry": { "type": "Point", "coordinates": [24.941, 60.171] } },
+    { "type": "Feature", "properties": { "name": "Shanghai", "country": "China", "modes": ["truck", "sea", "air", "rail"], "network": "Trans-Siberian" }, "geometry": { "type": "Point", "coordinates": [121.4737, 31.2304] } },
+    { "type": "Feature", "properties": { "name": "Los Angeles", "country": "USA", "modes": ["truck", "sea", "air", "rail"], "network": "North American Rail" }, "geometry": { "type": "Point", "coordinates": [-118.2437, 34.0522] } },
+    { "type": "Feature", "properties": { "name": "Rotterdam", "country": "Netherlands", "modes": ["truck", "sea", "rail"], "network": "European Rail" }, "geometry": { "type": "Point", "coordinates": [4.4777, 51.9225] } },
+    { "type": "Feature", "properties": { "name": "Singapore", "country": "Singapore", "modes": ["truck", "sea", "air"] }, "geometry": { "type": "Point", "coordinates": [103.8198, 1.3521] } },
+    { "type": "Feature", "properties": { "name": "New York", "country": "USA", "modes": ["truck", "sea", "air", "rail"], "network": "North American Rail" }, "geometry": { "type": "Point", "coordinates": [-74.006, 40.7128] } },
+    { "type": "Feature", "properties": { "name": "Tokyo", "country": "Japan", "modes": ["truck", "sea", "air", "rail"], "network": "Shinkansen" }, "geometry": { "type": "Point", "coordinates": [139.6917, 35.6895] } },
+    { "type": "Feature", "properties": { "name": "Hamburg", "country": "Germany", "modes": ["truck", "sea", "rail"], "network": "European Rail" }, "geometry": { "type": "Point", "coordinates": [9.9937, 53.5511] } },
+    { "type": "Feature", "properties": { "name": "Dubai", "country": "UAE", "modes": ["truck", "sea", "air"] }, "geometry": { "type": "Point", "coordinates": [55.2708, 25.2048] } },
+    { "type": "Feature", "properties": { "name": "Chicago", "country": "USA", "modes": ["truck", "rail", "air"], "network": "North American Rail" }, "geometry": { "type": "Point", "coordinates": [-87.6298, 41.8781] } },
+    { "type": "Feature", "properties": { "name": "Hong Kong", "country": "China", "modes": ["truck", "sea", "air"] }, "geometry": { "type": "Point", "coordinates": [114.1694, 22.3193] } },
+    { "type": "Feature", "properties": { "name": "Busan", "country": "South Korea", "modes": ["truck", "sea", "rail"], "network": "Korea Rail" }, "geometry": { "type": "Point", "coordinates": [129.0756, 35.1796] } },
+    { "type": "Feature", "properties": { "name": "Antwerp", "country": "Belgium", "modes": ["truck", "sea", "rail"], "network": "European Rail" }, "geometry": { "type": "Point", "coordinates": [4.4028, 51.2194] } },
+    { "type": "Feature", "properties": { "name": "Moscow", "country": "Russia", "modes": ["truck", "rail"], "network": "Trans-Siberian" }, "geometry": { "type": "Point", "coordinates": [37.6173, 55.7558] } },
+    { "type": "Feature", "properties": { "name": "São Paulo", "country": "Brazil", "modes": ["truck", "air"] }, "geometry": { "type": "Point", "coordinates": [-46.6333, -23.5505] } },
+    { "type": "Feature", "properties": { "name": "Mumbai", "country": "India", "modes": ["truck", "sea", "air", "rail"], "network": "Indian Rail" }, "geometry": { "type": "Point", "coordinates": [72.8777, 19.076] } },
+    { "type": "Feature", "properties": { "name": "Sydney", "country": "Australia", "modes": ["truck", "sea", "air", "rail"], "network": "Australian Rail" }, "geometry": { "type": "Point", "coordinates": [151.2093, -33.8688] } },
+    { "type": "Feature", "properties": { "name": "Paris", "country": "France", "modes": ["truck", "rail", "air"], "network": "European Rail" }, "geometry": { "type": "Point", "coordinates": [2.3522, 48.8566] } },
+    { "type": "Feature", "properties": { "name": "Beijing", "country": "China", "modes": ["truck", "rail", "air"], "network": "China Rail" }, "geometry": { "type": "Point", "coordinates": [116.4074, 39.9042] } },
+    { "type": "Feature", "properties": { "name": "Lagos", "country": "Nigeria", "modes": ["truck", "sea", "air"] }, "geometry": { "type": "Point", "coordinates": [3.3792, 6.5244] } },
+    { "type": "Feature", "properties": { "name": "Istanbul", "country": "Turkey", "modes": ["truck", "sea", "air", "rail"], "network": "European Rail" }, "geometry": { "type": "Point", "coordinates": [28.9784, 41.0082] } },
+    { "type": "Feature", "properties": { "name": "Jakarta", "country": "Indonesia", "modes": ["truck", "sea", "air"] }, "geometry": { "type": "Point", "coordinates": [106.8456, -6.2088] } }
   ]
 }
