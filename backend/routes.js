@@ -1,40 +1,96 @@
 const fs = require("fs")
+const path = require('path');
+
 
 // Load the GeoJSON file
 const geojson = JSON.parse(fs.readFileSync('./data/routes.geojson', 'utf8'));
 
+const saveGraph = (graph) => {
+  const filePath = path.join(__dirname, 'graph.json');
+  fs.writeFileSync(filePath, JSON.stringify(graph, null, 2));
+};
+
+// Function to read the graph from a JSON file
+const readGraph = () => {
+  const filePath = path.join(__dirname, 'graph.json');
+  if (fs.existsSync(filePath)) {
+    const data = fs.readFileSync(filePath);
+    return JSON.parse(data);
+  }
+  return null;
+};
+
 // Convert GeoJSON to graph representation
 const buildGraph = (geojson) => {
   const graph = {};
-  
-  geojson.features.forEach((feature) => {
-    if (feature.geometry.type !== "LineString") return;
+  const locations = geojson.features;
 
-    const { from, to, transport, emission_per_ton_km, speed_km_h } = feature.properties;
-    const [fromCoords, toCoords] = feature.geometry.coordinates;
-
-    let distance, emission, time, geometry;
-    
-    if ( transport === "air ") {
-      [distance, emission, time, geometry] = airRoute(fromCoords, toCoords);
-    } else if ( transport === "sea" ) {
-      [distance, emission, time, geometry] = seaRoute(fromCoords, toCoords);
-    } else if ( transport === "truck" ) {
-      [distance, emission, time, geometry] = truckRoute(fromCoords, toCoords);
-    } else if ( transport === "rail" ) {
-      [distance, emission, time, geometry] = railRoute(fromCoords, toCoords);
-    } else {
-      console.log("Transport type not recognized:", transport)
-      return
-    }
-    
-    if (!graph[from]) graph[from] = [];
-    if (!graph[to]) graph[to] = [];
-
-    // Add bidirectional edges
-    graph[from].push({ node: to, distance, emission: emission_per_ton_km * distance, time: distance / speed_km_h, transport: transport, geometry: geometry });
-    graph[to].push({ node: from, distance: distance, emission: emission, time: time, transport: transport, geometry: geometry });
+  // Initialize empty adjacency list for each location
+  locations.forEach((location) => {
+      graph[location.properties.name] = { 
+        coordinates: location.geometry.coordinates, 
+        edges: [] };
   });
+
+  // Generate edges between locations with shared transport modes
+  for (let i = 0; i < locations.length; i++) {
+      for (let j = i + 1; j < locations.length; j++) {
+          const locA = locations[i];
+          const locB = locations[j];
+
+          const sharedModes = locA.properties.modes.filter(mode => locB.properties.modes.includes(mode));
+
+          if (sharedModes.length > 0) {
+              sharedModes.forEach((mode) => {
+                  let distance, emission, time, geometry;
+                  const fromCoords = locA.geometry.coordinates;
+                  const toCoords = locB.geometry.coordinates;
+    
+                  if ( mode === "air") {
+                    [distance, emission, time, geometry] = findAirRoute(fromCoords, toCoords);
+                  } else if ( mode === "sea" ) {
+                    [distance, emission, time, geometry] = findSeaRoute(fromCoords, toCoords);
+                  } else if ( mode === "truck" ) {
+                    [distance, emission, time, geometry] = findTruckRoute(fromCoords, toCoords);
+                  } else if ( mode === "rail" ) {
+                    if ( locA.properties.network === locB.properties.network ) {
+                      [distance, emission, time, geometry] = findRailRoute(fromCoords, toCoords);
+                    } else {
+                      return
+                    }
+                    
+                  } else {
+                    console.log("Transportation mode not recognized:", mode)
+                    return
+                  }
+
+                  if ( !distance || !emission || !time | !geometry ) {
+                    console.log(`Unable to find ${mode} route between ${locA.properties.name} and ${locB.properties.name}`)
+                    return
+                  }
+          
+                  // Add bidirectional edges
+                  graph[locA.properties.name].edges.push({
+                    node: locB.properties.name,
+                    transport: mode,
+                    distance: distance,
+                    emission: emission,
+                    time: time,
+                    geometry: geometry
+                  });
+
+                  graph[locB.properties.name].edges.push({
+                    node: locA.properties.name,
+                    transport: mode,
+                    distance: distance,
+                    emission: emission,
+                    time: time,
+                    geometry: geometry
+                  });
+              });
+          }
+      }
+  }
 
   return graph;
 };
@@ -50,7 +106,7 @@ const haversineDistance = ([lon1, lat1], [lon2, lat2]) => {
   return 2 * R * Math.asin(Math.sqrt(a));
 };
 
-const airRoute = ([lon1, lat1], [lon2, lat2]) => {
+const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 50
   const speed_km_h = 800
 
@@ -61,10 +117,15 @@ const airRoute = ([lon1, lat1], [lon2, lat2]) => {
     type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
   }
 
-  return [distance, emission, time, geometry]
+  routeFound = true
+  if ( routeFound ) {
+    return [distance, emission, time, geometry]
+  } else {
+    return [null, null, null, null]
+  }
 };
 
-const seaRoute = ([lon1, lat1], [lon2, lat2]) => {
+const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 10
   const speed_km_h = 30
 
@@ -75,10 +136,15 @@ const seaRoute = ([lon1, lat1], [lon2, lat2]) => {
     type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
   }
 
-  return [distance, emission, time, geometry]
+  routeFound = true
+  if ( routeFound ) {
+    return [distance, emission, time, geometry]
+  } else {
+    return [null, null, null, null]
+  }
 };
 
-const truckRoute = ([lon1, lat1], [lon2, lat2]) => {
+const findTruckRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 22
   const speed_km_h = 90
 
@@ -89,10 +155,15 @@ const truckRoute = ([lon1, lat1], [lon2, lat2]) => {
     type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
   }
 
-  return [distance, emission, time, geometry]
+  routeFound = true
+  if ( routeFound ) {
+    return [distance, emission, time, geometry]
+  } else {
+    return [null, null, null, null]
+  }
 };
 
-const railRoute = ([lon1, lat1], [lon2, lat2]) => {
+const findRailRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 6
   const speed_km_h = 100
 
@@ -103,11 +174,17 @@ const railRoute = ([lon1, lat1], [lon2, lat2]) => {
     type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
   }
 
-  return [distance, emission, time, geometry]
+  routeFound = true
+  if ( routeFound ) {
+    return [distance, emission, time, geometry]
+  } else {
+    return [null, null, null, null]
+  }
 };
 
 // Dijkstra’s algorithm for finding the optimal path
 const dijkstra = (graph, start, end, costType) => {
+  //console.log(graph)
   const pq = new Map();  // Priority queue
   const costs = {};      // Cost tracker
   const prev = {};       // Previous node tracker
@@ -123,7 +200,7 @@ const dijkstra = (graph, start, end, costType) => {
 
     if (currentNode === end) break;
 
-    graph[currentNode].forEach(({ node, [costType]: cost, geometry, transport, emission, time }) => {
+    graph[currentNode].edges.forEach(({ node, [costType]: cost, geometry, transport, emission, time }) => {
       const newCost = currentCost + cost;
       if (newCost < costs[node]) {
         costs[node] = newCost;
@@ -158,9 +235,59 @@ const dijkstra = (graph, start, end, costType) => {
   return path.length > 1 ? { path, totalCost: costs[end], geojson: { type: "FeatureCollection", features: geojsonFeatures } } : null;
 };
 
-// Main function to find optimal routes
-const findBestRoutes = (start, end) => {
-  const graph = buildGraph(geojson);
+// Function to add start or end location to graph if not already in graph
+const addLocationToGraph = (graph, newLocation, newLocationCoords) => {
+  graph[newLocation] = {coordinates: newLocationCoords, edges: []};
+
+  // Loop through all existing locations in the graph to create new edges
+  Object.keys(graph).forEach(existingNode => {
+    if (existingNode !== newLocation) {
+      const existingNodeCoords = graph[existingNode].coordinates;
+      
+      let distance, emission, time, geometry
+      [distance, emission, time, geometry] = findTruckRoute(newLocationCoords, existingNodeCoords)
+        
+      // Add the new edge for both directions (bidirectional routes)
+      graph[newLocation].edges.push({
+        node: existingNode,
+        transport: "truck",
+        distance: distance,
+        emission: emission,
+        time: time,
+        geometry: geometry
+      });
+
+      graph[existingNode].edges.push({
+        node: newLocation,
+        transport: "truck",
+        distance: distance,
+        emission: emission,
+        time: time,
+        geometry: geometry
+      });
+    }
+  });
+
+  return graph;
+};
+
+
+// Main function to find optimal routes. Set regenerate to false if there are no changes that affect the graph.
+const findBestRoutes = ( start, end, startCoords, endCoords, regenerate=true ) => {
+  let graph = readGraph();
+  if ( regenerate ) {
+    console.log('Regenerating the graph...');
+    graph = buildGraph(geojson);
+    saveGraph(graph); // Save the newly generated graph to file
+  }
+
+  if ( !graph[start] ) {
+    graph = addLocationToGraph(graph, start, startCoords)
+  }
+  if ( !graph[end] ) {
+    graph = addLocationToGraph(graph, end, endCoords)
+  }
+
   const fastestRoute = dijkstra(graph, start, end, "time");
   const lowestEmissionRoute = dijkstra(graph, start, end, "emission");
 

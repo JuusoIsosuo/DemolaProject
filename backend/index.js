@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require("cors")
 const fs = require("fs")
 const path = require("path")
+const util = require('util')
 
 const findBestRoutes = require('./routes')
 const searoute = require('searoute-js');
@@ -15,9 +16,17 @@ app.use(cors())
 app.use(express.json())
 
 // Example Usage
-const startCity = "Shanghai";
-const endCity = "New York";
-console.log(findBestRoutes(startCity, endCity));
+console.log("Singapore to New York");
+const routes1 = findBestRoutes("Singapore", "New York", [103.8198, 1.3521], [-74.006, 40.7128])
+console.log(util.inspect(routes1, false, null, true));
+
+console.log("Singapore to Tampere");
+const routes2 = findBestRoutes("Singapore", "Tampere", [103.8198, 1.3521], [23.78712, 61.49911])
+console.log(util.inspect(routes2, false, null, true));
+
+console.log("Paris to Tokyo");
+const routes3 = findBestRoutes("Paris", "Tokyo", [2.3522, 48.8566], [139.6917, 35.6895])
+console.log(util.inspect(routes3, false, null, true));
 
 app.get("/routes", (req, res) => {
   const geojsonPath = path.join(__dirname, "data", "routes.geojson")
