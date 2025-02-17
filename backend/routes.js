@@ -232,7 +232,10 @@ const dijkstra = (graph, start, end, costType) => {
     temp = prev[temp];
   };
 
-  return path.length > 1 ? { path, totalCost: costs[end], geojson: { type: "FeatureCollection", features: geojsonFeatures } } : null;
+  const totalEmission = geojsonFeatures.reduce(((total, feature) => total + feature.properties.emission), 0);
+  const totalTime = geojsonFeatures.reduce(((total, feature) => total + feature.properties.time), 0);
+
+  return path.length > 1 ? { path, totalEmission: totalEmission, totalTime: totalTime, geojson: { type: "FeatureCollection", features: geojsonFeatures } } : null;
 };
 
 // Function to add start or end location to graph if not already in graph
