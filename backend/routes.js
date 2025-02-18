@@ -1,6 +1,9 @@
 const fs = require("fs");
 const path = require('path');
 
+const { spawn, spawnSync } = require('child_process');
+
+const graphFilePath = path.join(__dirname, 'graph.json');
 
 // Load the GeoJSON file
 const geojson = JSON.parse(fs.readFileSync('./data/locations.geojson', 'utf8'));
@@ -50,6 +53,7 @@ const buildGraph = (geojson) => {
             [distance, emission, time, geometry] = findAirRoute(fromCoords, toCoords);
           } else if ( mode === "sea" ) {
             [distance, emission, time, geometry] = findSeaRoute(fromCoords, toCoords);
+            console.log("Sea Route Distance!!!!!!!!!!!:", distance);
           } else if ( mode === "truck" ) {
             [distance, emission, time, geometry] = findTruckRoute(fromCoords, toCoords);
           } else if ( mode === "rail" ) {
@@ -126,8 +130,78 @@ const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
 };
 
 const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
+  const emission_per_ton_km = 1;
+
+  const originCoords = [lon1, lat1];
+  const destinationCoords = [lon2, lat2];
+
+  const pythonProcess = spawnSync('python', ['searoute_script.py', JSON.stringify(originCoords), JSON.stringify(destinationCoords)]);
+
+  if (pythonProcess.error) {
+    console.error(`Error: ${pythonProcess.error.message}`);
+    return [null, null, null, null];
+  }
+
+  if (pythonProcess.status !== 0) {
+    console.error(`Python process exited with code ${pythonProcess.status}`);
+    return [null, null, null, null];
+  }
+
+  const dataToSend = pythonProcess.stdout.toString();
+  const route = JSON.parse(dataToSend);
+  console.log("Marine Route GeoJSON:", route);
+
+  const distance = route.properties.length;
+  console.log("Distance:", distance);
+  const emission = distance * emission_per_ton_km;
+  console.log("Emission:", emission);
+  const time = route.properties.duration_hours;
+  console.log("Time:", time);
+  const geometry = {
+    type: "LineString", coordinates: route.geometry.coordinates
+  };
+  console.log("Geometry:", geometry);
+
+  // Append the sea route to graph.json
+  const graph = JSON.parse(fs.readFileSync(graphFilePath, 'utf8'));
+
+  const originNode = `${lon1},${lat1}`;
+  const destinationNode = `${lon2},${lat2}`;
+
+  if (!graph[originNode]) {
+    graph[originNode] = { coordinates: [lon1, lat1], edges: [] };
+  }
+
+  if (!graph[destinationNode]) {
+    graph[destinationNode] = { coordinates: [lon2, lat2], edges: [] };
+  }
+
+  graph[originNode].edges.push({
+    node: destinationNode,
+    transport: "sea",
+    distance: distance,
+    emission: emission,
+    time: time,
+    geometry: geometry
+  });
+
+  graph[destinationNode].edges.push({
+    node: originNode,
+    transport: "sea",
+    distance: distance,
+    emission: emission,
+    time: time,
+    geometry: geometry
+  });
+
+  fs.writeFileSync(graphFilePath, JSON.stringify(graph, null, 2));
+
+  return [distance, emission, time, geometry];
+};
+
+const findTruckRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 10;
-  const speed_km_h = 30;
+  const speed_km_h = 60;
 
   const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
   const emission = distance * emission_per_ton_km;
@@ -136,27 +210,8 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
     type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
   };
 
-  routeFound = true;
-  if ( routeFound ) {
-    return [distance, emission, time, geometry];
-  } else {
-    return [null, null, null, null];
-  }
-};
-
-const findTruckRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 22;
-  const speed_km_h = 90;
-
-  const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
-  const emission = distance * emission_per_ton_km;
-  const time = distance / speed_km_h;
-  const geometry = {
-    type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
-  }
-
-  routeFound = true;
-  if ( routeFound ) {
+  const routeFound = true;
+  if (routeFound) {
     return [distance, emission, time, geometry];
   } else {
     return [null, null, null, null];

@@ -16,11 +16,27 @@ app.use(cors())
 app.use(express.json())
 
 app.get("/routes", (req, res) => {
+  const geojsonPath = path.join(__dirname, "data", "routes.geojson")
+
+  console.log(geojsonPath)
+
+  fs.readFile(geojsonPath, "utf8", (err, data) => {
+    console.log(data)
+    if (err) {
+        return res.status(500).json({ error: "Failed to read GeoJSON file" })
+    }
+
+    res.json(JSON.parse(data))
+  })
+})
+
+
+app.get("/searoute", async (req, res) => {
+  
+  const { spawn } = require('child_process');
+
   try {
-    const origin = req.query.origin;
-    const destination = req.query.destination;
-    const originCoordinates = req.query.originCoords;
-    const destinationCoordinates = req.query.destCoords;
+    const { origin, destination } = req.query;
 
     if (!originCoordinates || !destinationCoordinates) {
       return res.status(400).json({ error: "Missing origin or destination coordinates" });
@@ -42,41 +58,68 @@ app.get("/routes", (req, res) => {
   }
 })
 
-app.get("/searoutes", async (req, res) => {
+
+app.get("/searoute", async (req, res) => {
+  
+  const { spawn } = require('child_process');
+
   try {
-    const { originCoordinates, destinationCoordinates } = req.query;
+    const { origin, destination } = req.query;
 
-    if (!originCoordinates || !destinationCoordinates) {
-      return res.status(400).json({ error: "Missing origin or destination coordinates" })
+    if (!origin || !destination) {
+      return res.status(400).json({ error: "Missing 'origin' or 'destination' query parameters" });
     }
 
-    const originCoordinatesArray = originCoordinates.split(",").map(Number)
-    const destinationCoordinatesArray = destinationCoordinates.split(",").map(Number)
+    const originCoords = origin.split(",").map(Number);
+    const destinationCoords = destination.split(",").map(Number);
 
-    if (originCoordinatesArray.length !== 2 || destinationCoordinatesArray.length !== 2) {
-      return res.status(400).json({ error: "Invalid origin or destination coordinates" })
+    if (originCoords.length !== 2 || destinationCoords.length !== 2) {
+      return res.status(400).json({ error: "Invalid coordinate format. Use 'longitude,latitude'" });
     }
 
-    const route = await searoute(originCoordinatesArray, destinationCoordinatesArray);
+    const pythonProcess = spawn('python', ['searoute_script.py', JSON.stringify(originCoords), JSON.stringify(destinationCoords)]);
 
-    const geojson = {
-      "type": "FeatureCollection",
-      "features": [
-        {
-          "type": "Feature",
-          "properties": { "transport": "sea" },
-          "geometry": {
-            "type": "LineString",
-            "coordinates": route.geometry.coordinates
-          }
+    let dataToSend = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      dataToSend += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        return res.status(500).json({ error: `Python process exited with code ${code}` });
+      }
+      try {
+        const route = JSON.parse(dataToSend);
+        console.log("Marine Route GeoJSON:", route);
+
+        const geojson = {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": { "transport": "sea" },
+              "geometry": {
+                "type": "LineString",
+                "coordinates": route.geometry.coordinates
+              }
+            }
+          ]
         }
-      ]
-    }
 
-    res.json(geojson);
+        res.json(geojson);
+      } catch (error) {
+        console.error("Error parsing JSON:", error);
+        res.status(500).json({ error: "Error parsing JSON response from Python script" });
+      }
+    });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: "Failed to find sea route" })
+    console.error("Error fetching marine route:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
