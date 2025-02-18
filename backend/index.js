@@ -2,6 +2,10 @@ const express = require('express')
 const cors = require("cors")
 const fs = require("fs")
 const path = require("path")
+const util = require('util')
+
+const findBestRoutes = require('./routes')
+const searoute = require('searoute-js');
 
 const PORT = 3000
 
@@ -24,6 +28,34 @@ app.get("/routes", (req, res) => {
 
     res.json(JSON.parse(data))
   })
+})
+
+
+app.get("/searoute", async (req, res) => {
+  
+  const { spawn } = require('child_process');
+
+  try {
+    const { origin, destination } = req.query;
+
+    if (!originCoordinates || !destinationCoordinates) {
+      return res.status(400).json({ error: "Missing origin or destination coordinates" });
+    }
+
+    const originCoordinatesArray = originCoordinates.split(",").map(Number);
+    const destinationCoordinatesArray = destinationCoordinates.split(",").map(Number);
+
+    if (originCoordinatesArray.length !== 2 || destinationCoordinatesArray.length !== 2) {
+      return res.status(400).json({ error: "Invalid origin or destination coordinates" });
+    }
+
+    const routes = findBestRoutes(origin, destination, originCoordinatesArray, destinationCoordinatesArray);
+
+    res.json(routes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to find routes" });
+  }
 })
 
 
