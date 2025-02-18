@@ -21,13 +21,51 @@ const RouteForm = styled.div`
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   backdrop-filter: blur(8px);
-  width: 240px;
+  width: 280px;
+`;
+
+const InputGroup = styled.div`
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+`;
+
+const InputWrapper = styled.div`
+  flex: 1;
+  margin-right: 16px;
+`;
+
+const SwapButton = styled.button`
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 24px;
+  margin-right: 4px;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
 `;
 
 const Input = styled.input`
-  width: 200px;
+  width: 100%;
   padding: 0.5rem;
-  margin: 0.25rem auto;
+  margin: 0.25rem 0;
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -41,9 +79,9 @@ const Input = styled.input`
 `;
 
 const Button = styled.button`
-  width: 200px;
+  width: 100%;
   padding: 0.5rem;
-  margin: 0.5rem auto 0;
+  margin: 0.5rem 0 0;
   background-color: #2563eb;
   color: white;
   border: none;
@@ -74,6 +112,7 @@ const Map = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
   const [routeToShow, setRouteToShow] = useState('green');
+  const [selectedRoute, setSelectedRoute] = useState(null);
 
   // Convert address to coordinates using Mapbox Geocoding API
   const getCoordinates = async (address) => {
@@ -163,6 +202,11 @@ const Map = () => {
     await calculateRoute();
   };
 
+  const handleSwapLocations = () => {
+    setOrigin(destination);
+    setDestination(origin);
+  };
+
   const showRoutes = (data) => {
     if (map.current.getSource('routes')) {
       if (map.current.getLayer('route-sea')) map.current.removeLayer('route-sea');
@@ -173,24 +217,23 @@ const Map = () => {
       map.current.removeSource('routes');
     }
 
-    if ( routeToShow === 'green' ) {
-      map.current.addSource('routes', {
-        type: 'geojson',
-        data: data.lowestEmission.geojson,
-      });
-    } 
-    else if ( routeToShow === 'fast' ) {
-      map.current.addSource('routes', {
-        type: 'geojson',
-        data: data.fastest.geojson,
-      });
-    }
+    const routeData = routeToShow === 'green' ? data.lowestEmission : data.fastest;
 
+    map.current.addSource('routes', {
+      type: 'geojson',
+      data: routeData.geojson,
+    });
+
+    // Päivitetyt reittityylit paksummilla viivoilla ja selkeämmillä tyyleillä
     map.current.addLayer({
       id: 'route-sea',
       type: 'line',
       source: 'routes',
-      paint: { 'line-color': 'blue', 'line-width': 3 },
+      paint: {
+        'line-color': '#2563eb', // Kirkkaampi sininen
+        'line-width': 6,
+        'line-opacity': 0.8
+      },
       filter: ['==', 'transport', 'sea'],
     });
 
@@ -198,7 +241,12 @@ const Map = () => {
       id: 'route-air',
       type: 'line',
       source: 'routes',
-      paint: { 'line-color': 'red', 'line-width': 3 },
+      paint: {
+        'line-color': '#dc2626', // Kirkas punainen
+        'line-width': 6,
+        'line-opacity': 0.8,
+        'line-dasharray': [3, 3] // Lyhyempi katkoviiva lentoreiteille
+      },
       filter: ['==', 'transport', 'air'],
     });
 
@@ -206,7 +254,12 @@ const Map = () => {
       id: 'route-truck',
       type: 'line',
       source: 'routes',
-      paint: { 'line-color': 'black', 'line-width': 3 },
+      paint: {
+        'line-color': '#374151', // Tumma harmaa
+        'line-width': 6,
+        'line-opacity': 0.8,
+        'line-dasharray': [1, 0] // Yhtenäinen viiva
+      },
       filter: ['==', 'transport', 'truck'],
     });
 
@@ -214,12 +267,44 @@ const Map = () => {
       id: 'route-rail',
       type: 'line',
       source: 'routes',
-      paint: { 'line-color': 'green', 'line-width': 3 },
+      paint: {
+        'line-color': '#059669', // Vihreä rautateille
+        'line-width': 6,
+        'line-opacity': 0.8,
+        'line-dasharray': [8, 4] // Pidempi katkoviiva rautateille
+      },
       filter: ['==', 'transport', 'rail'],
     });
 
+    // Lisätään click event jokaiselle reittityypille
+    ['route-sea', 'route-air', 'route-truck', 'route-rail'].forEach(layerId => {
+      map.current.on('click', layerId, (e) => {
+        if (e.features.length > 0) {
+          const clickedRoute = e.features[0];
+          setSelectedRoute({
+            type: clickedRoute.properties.transport,
+            length: clickedRoute.properties.length,
+            duration: clickedRoute.properties.duration,
+            emissions: clickedRoute.properties.emissions,
+            carbonFootprint: clickedRoute.properties.carbonFootprint,
+            ecoRating: clickedRoute.properties.ecoRating,
+            hasGreenerAlternative: clickedRoute.properties.hasGreenerAlternative
+          });
+        }
+      });
+
+      // Lisätään hover-efekti
+      map.current.on('mouseenter', layerId, () => {
+        map.current.getCanvas().style.cursor = 'pointer';
+      });
+
+      map.current.on('mouseleave', layerId, () => {
+        map.current.getCanvas().style.cursor = '';
+      });
+    });
+
     // Fit the map to the route bounds
-    const coordinates = data.fastest.geojson.features[0].geometry.coordinates;
+    const coordinates = routeData.geojson.features[0].geometry.coordinates;
     const bounds = coordinates.reduce((bounds, coord) => {
       return bounds.extend(coord);
     }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
@@ -232,36 +317,81 @@ const Map = () => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      style={{ height: '100vh', position: 'relative' }}
-    >
+    <div className={`map-container ${selectedRoute ? 'with-sidebar' : ''}`}>
+      {selectedRoute && (
+        <div className="route-info-sidebar">
+          <h2>Reitin tiedot</h2>
+          <button className="close-button" onClick={() => setSelectedRoute(null)}>
+            ✕
+          </button>
+          
+          <div className="route-details">
+            <div className="info-section">
+              <h3>Perustiedot</h3>
+              <p>Kokonaispituus: {selectedRoute.length || '-'} km</p>
+              <p>Arvioitu kesto: {selectedRoute.duration || '-'}</p>
+            </div>
+
+            <div className="info-section">
+              <h3>Ympäristövaikutukset</h3>
+              <p>CO2 päästöt: {selectedRoute.emissions || '-'} kg</p>
+              <p>Hiilijalanjälki per km: {selectedRoute.carbonFootprint || '-'}</p>
+            </div>
+
+            <div className="info-section">
+              <h3>Ympäristöystävällisyys</h3>
+              <div className="eco-rating">
+                <p>Reitin ekologisuusluokitus: {selectedRoute.ecoRating || '-'}</p>
+                <p>Vihreämpi vaihtoehto saatavilla: {selectedRoute.hasGreenerAlternative ? 'Kyllä' : 'Ei'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <RouteForm>
         <form onSubmit={handleSubmit}>
-          <Input
-            type="text"
-            placeholder="Origin"
-            value={origin}
-            onChange={(e) => setOrigin(e.target.value)}
-          />
-          <Input
-            type="text"
-            placeholder="Destination"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-          />
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Calculating...' : 'Update Route'}
-          </Button>
+          <InputGroup>
+            <InputWrapper>
+              <Input
+                type="text"
+                placeholder="Origin"
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+              />
+              <Input
+                type="text"
+                placeholder="Destination"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+              />
+              <Button 
+                type="submit" 
+                disabled={isLoading} 
+                style={{ 
+                  width: '85%', 
+                  marginLeft: '13%',
+                  marginRight: '0'
+                }}
+              >
+                {isLoading ? 'Calculating...' : 'Update Route'}
+              </Button>
+            </InputWrapper>
+            <SwapButton 
+              type="button" 
+              onClick={handleSwapLocations}
+              title="Vaihda lähtö- ja kohdepaikka"
+            >
+              ⇅
+            </SwapButton>
+          </InputGroup>
         </form>
       </RouteForm>
       <div ref={mapContainer} id="map-container" />
       <Button type="button" onClick={() => routeToShow === "green" ? setRouteToShow("fast") : setRouteToShow("green")}>
         {routeToShow === "green" ? "Show Fastest Route" : "Show Greenest Route"}
       </Button>
-    </motion.div>
+    </div>
   );
 };
 
