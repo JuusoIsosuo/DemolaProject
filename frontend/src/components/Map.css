@@ -8,11 +8,17 @@
 }
 
 #map-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   height: 100%;
   width: 100%;
   border-radius: 1rem;
   overflow: hidden;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transition: all 0.3s ease;
 }
 
 .sidebar {
@@ -68,8 +74,7 @@
 }
 
 .map-container.with-sidebar {
-  margin-left: 400px;
-  width: calc(100% - 400px);
+  padding-left: 400px;
 }
 
 .route-info-sidebar {
@@ -119,14 +124,75 @@
 }
 
 .eco-rating {
-  padding: 10px;
+  padding: 12px;
   background-color: #ecfdf5;
   border-radius: 6px;
   margin-top: 10px;
+}
+
+.eco-rating p:first-child {
+  font-weight: 500;
+  color: #059669;
 }
 
 /* Reittien hover-efekti */
 .leaflet-interactive:hover {
   cursor: pointer;
   stroke-opacity: 1;
+}
+
+.route-segment {
+  background-color: #f8fafc;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 6px;
+  border-left: 4px solid #2563eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.route-segment:hover {
+  background-color: #f1f5f9;
+}
+
+.route-segment.selected {
+  background-color: #eff6ff;
+  border-left-color: #3b82f6;
+}
+
+.route-segment p {
+  margin: 4px 0;
+  font-size: 0.9em;
+}
+
+.segment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.expand-icon {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.segment-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.segment-details p {
+  margin: 4px 0;
+  font-size: 0.9em;
+  color: #4b5563;
+}
+
+.map-container.with-sidebar #map-container {
+  left: 400px;
+}
+
+/* Muokataan RouteForm:in tyylejä */
+.map-container.with-sidebar .RouteForm {
+  left: 416px; /* 400px + 16px margin */
 }
