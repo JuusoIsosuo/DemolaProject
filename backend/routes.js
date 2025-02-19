@@ -255,12 +255,12 @@ const dijkstra = (graph, start, end, costType) => {
 
     if (currentNode === end) break;
 
-    graph[currentNode].edges.forEach(({ node, [costType]: cost, geometry, transport, emission, time }) => {
+    graph[currentNode].edges.forEach(({ node, [costType]: cost, geometry, transport, distance, emission, time }) => {
       const newCost = currentCost + cost;
       if (newCost < costs[node]) {
         costs[node] = newCost;
         prev[node] = currentNode;
-        pathGeometry[node] = { geometry, transport, emission, time }; // Store the full leg data
+        pathGeometry[node] = { geometry, transport, distance, emission, time }; // Store the full leg data
         pq.set(node, newCost);
       }
     });
@@ -279,6 +279,7 @@ const dijkstra = (graph, start, end, costType) => {
         geometry: pathGeometry[temp].geometry, // Geometry of the leg
         properties: {
           transport: pathGeometry[temp].transport,
+          distance: pathGeometry[temp].distance,
           emission: pathGeometry[temp].emission,
           time: pathGeometry[temp].time,
         }
@@ -287,10 +288,11 @@ const dijkstra = (graph, start, end, costType) => {
     temp = prev[temp];
   };
 
+  const totalDistance = geojsonFeatures.reduce(((total, feature) => total + feature.properties.distance), 0);
   const totalEmission = geojsonFeatures.reduce(((total, feature) => total + feature.properties.emission), 0);
   const totalTime = geojsonFeatures.reduce(((total, feature) => total + feature.properties.time), 0);
 
-  return path.length > 1 ? { path, totalEmission: totalEmission, totalTime: totalTime, geojson: { type: "FeatureCollection", features: geojsonFeatures } } : null;
+  return path.length > 1 ? { path, totalDistance, totalEmission: totalEmission, totalTime: totalTime, geojson: { type: "FeatureCollection", features: geojsonFeatures } } : null;
 };
 
 // Function to add start or end location to graph if not already in graph
