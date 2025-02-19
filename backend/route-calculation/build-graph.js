@@ -17,6 +17,8 @@ const buildGraph = async (geojson = GEOJSON) => {
   const graph = {};
   const locations = geojson.features;
   const processedEdges = {};
+
+  // Initialize processed edges counter
   processedEdges.air = 0;
   processedEdges.sea = 0;
   processedEdges.truck = 0;
@@ -35,6 +37,7 @@ const buildGraph = async (geojson = GEOJSON) => {
       const locA = locations[i];
       const locB = locations[j];
 
+      // Find shared transportation modes between locations
       const sharedModes = locA.properties.modes.filter(mode => locB.properties.modes.includes(mode));
 
       if (sharedModes.length > 0) {
@@ -43,7 +46,7 @@ const buildGraph = async (geojson = GEOJSON) => {
           const fromCoords = locA.geometry.coordinates;
           const toCoords = locB.geometry.coordinates;
 
-          
+          // Find route based on transportation mode
           if ( mode === "air") {
             [distance, emission, time, geometry] = findAirRoute(fromCoords, toCoords);
           } else if ( mode === "sea" ) {
@@ -56,6 +59,7 @@ const buildGraph = async (geojson = GEOJSON) => {
               continue;
             }
           } else if ( mode === "rail" ) {
+            // Check if locations are on the same rail network
             if ( locA.properties.network === locB.properties.network ) {
               [distance, emission, time, geometry] = findRailRoute(fromCoords, toCoords);
             } else {
@@ -67,6 +71,7 @@ const buildGraph = async (geojson = GEOJSON) => {
             continue;
           }
 
+          // Check if route was found
           if ( !distance || !emission || !time || !geometry ) {
             console.log(`Unable to find ${mode} route between ${locA.properties.name} and ${locB.properties.name}`);
             continue;
@@ -91,6 +96,7 @@ const buildGraph = async (geojson = GEOJSON) => {
             geometry: geometry
           });
           
+          // Keep track of processed edges
           processedEdges[mode]++;
           console.log(processedEdges);
         };
@@ -101,6 +107,7 @@ const buildGraph = async (geojson = GEOJSON) => {
   return graph;
 };
 
+// Run the script if called directly
 if (require.main === module) {
   (async () => {
     const args = process.argv.slice(2); // Get command-line arguments

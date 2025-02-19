@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require('path');
 const { findTruckRoute } = require('./find-routes.js')
 
-// Function to read the graph from a JSON file
+// Read the graph from a JSON file
 const readGraph = () => {
   const filePath = path.join(__dirname, 'graph.json');
   if (fs.existsSync(filePath)) {
@@ -12,7 +12,7 @@ const readGraph = () => {
   return null;
 };
 
-// Function to add start or end location to graph if not already in graph
+// Add start or end location to graph if not already in graph
 const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
   graph[newLocation] = {coordinates: newLocationCoords, edges: []};
 
@@ -23,6 +23,7 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
       
       let distance, emission, time, geometry;
       try {
+        // Find truck route between the new location and the existing location
         [distance, emission, time, geometry] = await findTruckRoute(newLocationCoords, existingNodeCoords);
       } catch (error) {
         console.log("Unable to find truck route:", error.response.data.message);
@@ -33,7 +34,7 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
         continue;
       }
         
-      // Add the new edge for both directions (bidirectional routes)
+      // Add the new edge for both directions
       graph[newLocation].edges.push({
         node: existingNode,
         transport: "truck",
@@ -57,24 +58,27 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
   return graph;
 };
 
-// Dijkstra’s algorithm for finding the optimal path
+// Dijkstra’s algorithm for finding the optimal path by costType
 const dijkstra = (graph, start, end, costType) => {
-  //console.log(graph)
   const pq = new Map();  // Priority queue
   const costs = {};      // Cost tracker
   const prev = {};       // Previous node tracker
   const pathGeometry = {}; // Track geometry for the path
 
+  // Initialize the costs and priority queue
   Object.keys(graph).forEach(node => costs[node] = Infinity);
   costs[start] = 0;
   pq.set(start, 0);
 
+  // Main loop
   while (pq.size > 0) {
+    // Get the node with the lowest cost
     const [currentNode, currentCost] = [...pq.entries()].reduce((a, b) => a[1] < b[1] ? a : b);
     pq.delete(currentNode);
 
     if (currentNode === end) break;
 
+    // Update the costs and priority queue
     graph[currentNode].edges.forEach(({ node, [costType]: cost, geometry, transport, distance, emission, time }) => {
       const newCost = currentCost + cost;
       if (newCost < costs[node]) {
@@ -108,6 +112,7 @@ const dijkstra = (graph, start, end, costType) => {
     temp = prev[temp];
   };
 
+  // Calculate total distance, emission, and time
   const totalDistance = geojsonFeatures.reduce(((total, feature) => total + feature.properties.distance), 0);
   const totalEmission = geojsonFeatures.reduce(((total, feature) => total + feature.properties.emission), 0);
   const totalTime = geojsonFeatures.reduce(((total, feature) => total + feature.properties.time), 0);
@@ -115,10 +120,11 @@ const dijkstra = (graph, start, end, costType) => {
   return path.length > 1 ? { path, totalDistance, totalEmission: totalEmission, totalTime: totalTime, geojson: { type: "FeatureCollection", features: geojsonFeatures } } : null;
 };
 
-// Main function to find optimal routes. Set regenerate to false if there are no changes that affect the graph.
+// Main function to find optimal routes
 const findBestRoutes = async ( start, end, startCoords, endCoords ) => {
   let graph = readGraph();
 
+  // Add start and end locations to the graph if they are not already there
   if ( !graph[start] ) {
     graph = await addLocationToGraph(graph, start, startCoords);
   }
@@ -126,6 +132,7 @@ const findBestRoutes = async ( start, end, startCoords, endCoords ) => {
     graph = await addLocationToGraph(graph, end, endCoords);
   }
 
+  // Find the best routes
   const fastestRoute = dijkstra(graph, start, end, "time");
   const lowestEmissionRoute = dijkstra(graph, start, end, "emission");
 

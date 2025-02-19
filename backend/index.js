@@ -1,9 +1,5 @@
 const express = require('express')
 const cors = require("cors")
-const fs = require("fs")
-const path = require("path")
-const util = require('util')
-const searoute = require('searoute-js');
 
 const findBestRoutes = require('./route-calculation/routes.js')
 
@@ -32,6 +28,7 @@ app.get("/routes", async (req, res) => {
       return res.status(400).json({ error: "Invalid origin or destination coordinates" });
     }
 
+    // Find the best routes
     const routes = await findBestRoutes(origin, destination, originCoordinatesArray, destinationCoordinatesArray);
 
     res.json(routes);

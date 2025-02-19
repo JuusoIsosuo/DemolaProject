@@ -16,6 +16,7 @@ const haversineDistance = ([lon1, lat1], [lon2, lat2]) => {
   return 2 * R * Math.asin(Math.sqrt(a));
 };
 
+// !!! Not implemented !!!
 const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 50;
   const speed_km_h = 800;
@@ -41,6 +42,7 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
   const originCoords = [lon1, lat1];
   const destinationCoords = [lon2, lat2];
 
+  // Run the Python script to calculate the sea route
   const pythonProcess = spawnSync('python', ['searoute_script.py', JSON.stringify(originCoords), JSON.stringify(destinationCoords)]);
 
   if (pythonProcess.error) {
@@ -53,6 +55,7 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
     return [null, null, null, null];
   }
 
+  // Parse the output from the Python script
   const dataToSend = pythonProcess.stdout.toString();
   const route = JSON.parse(dataToSend);
 
@@ -73,11 +76,12 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2]) => {
     return [null, null, null, null];
   }
 
+  // Get the route from Mapbox API
   const response = await axios.get(
     `https://api.mapbox.com/directions/v5/mapbox/driving/${lon1},${lat1};${lon2},${lat2}?access_token=${MAPBOX_API_TOKEN}&alternatives=false&geometries=geojson&exclude=ferry`
   );
 
-  // Tarkistetaan, että reitti saatiin
+  // Check if a route was found
   if (!response.data.routes || response.data.routes.length === 0) {
     return [null, null, null, null];
   }
@@ -91,6 +95,7 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2]) => {
   return [distance, emission, time, geometry];
 };
 
+// !!! Not implemented !!!
 const findRailRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 6;
   const speed_km_h = 100;
