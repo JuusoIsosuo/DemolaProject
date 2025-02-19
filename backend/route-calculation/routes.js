@@ -24,7 +24,7 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
       let distance, emission, time, geometry;
       try {
         // Find truck route between the new location and the existing location
-        [distance, emission, time, geometry] = await findTruckRoute(newLocationCoords, existingNodeCoords);
+        [distance, emission, time, geometry] = await findTruckRoute(newLocationCoords, existingNodeCoords, maxDistance = 2000);
       } catch (error) {
         console.log("Unable to find truck route:", error.response.data.message);
         continue;

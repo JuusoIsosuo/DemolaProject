@@ -53,7 +53,7 @@ const buildGraph = async (geojson = GEOJSON) => {
             [distance, emission, time, geometry] = findSeaRoute(fromCoords, toCoords);
           } else if ( mode === "truck" ) {
             try {
-              [distance, emission, time, geometry] = await findTruckRoute(fromCoords, toCoords);
+              [distance, emission, time, geometry] = await findTruckRoute(fromCoords, toCoords, maxDistance = 5000);
             } catch (error) {
               console.log(`Unable to find ${mode} route between ${locA.properties.name} and ${locB.properties.name}:`, error.response.data.message);
               continue;

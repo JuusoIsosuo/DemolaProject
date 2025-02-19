@@ -69,9 +69,9 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
   return [distance, emission, time, geometry];
 };
 
-const findTruckRoute = async ([lon1, lat1], [lon2, lat2]) => {
+const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
   // Don't bother caculating very long routes
-  if (haversineDistance([lon1, lat1], [lon2, lat2]) > 2000) {
+  if (haversineDistance([lon1, lat1], [lon2, lat2]) > maxDistance) {
     console.log("   vvv Route too long vvv");
     return [null, null, null, null];
   }
