@@ -1,14 +1,6 @@
 const fs = require("fs");
 const path = require('path');
-const buildGraph = require('./build-graph.js')
-
-// Load the GeoJSON file
-const geojson = JSON.parse(fs.readFileSync('./data/locations.geojson', 'utf8'));
-
-const saveGraph = (graph) => {
-  const filePath = path.join(__dirname, 'graph.json');
-  fs.writeFileSync(filePath, JSON.stringify(graph, null, 2));
-};
+const { findTruckRoute } = require('./find-routes.js')
 
 // Function to read the graph from a JSON file
 const readGraph = () => {
@@ -115,13 +107,8 @@ const dijkstra = (graph, start, end, costType) => {
 };
 
 // Main function to find optimal routes. Set regenerate to false if there are no changes that affect the graph.
-const findBestRoutes = ( start, end, startCoords, endCoords, regenerate=true ) => {
+const findBestRoutes = ( start, end, startCoords, endCoords ) => {
   let graph = readGraph();
-  if ( regenerate ) {
-    console.log('Regenerating the graph...');
-    graph = buildGraph(geojson);
-    saveGraph(graph); // Save the newly generated graph to file
-  }
 
   if ( !graph[start] ) {
     graph = addLocationToGraph(graph, start, startCoords);
