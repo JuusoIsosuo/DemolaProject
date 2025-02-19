@@ -13,16 +13,25 @@ const readGraph = () => {
 };
 
 // Function to add start or end location to graph if not already in graph
-const addLocationToGraph = (graph, newLocation, newLocationCoords) => {
+const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
   graph[newLocation] = {coordinates: newLocationCoords, edges: []};
 
   // Loop through all existing locations in the graph to create new edges
-  Object.keys(graph).forEach(existingNode => {
+  for (const existingNode in graph) {
     if (existingNode !== newLocation) {
       const existingNodeCoords = graph[existingNode].coordinates;
       
       let distance, emission, time, geometry;
-      [distance, emission, time, geometry] = findTruckRoute(newLocationCoords, existingNodeCoords);
+      try {
+        [distance, emission, time, geometry] = await findTruckRoute(newLocationCoords, existingNodeCoords);
+      } catch (error) {
+        console.log("Unable to find truck route:", error.response.data.message);
+        continue;
+      }
+      if ( !distance || !emission || !time || !geometry ) {
+        console.log("Unable to find truck route");
+        continue;
+      }
         
       // Add the new edge for both directions (bidirectional routes)
       graph[newLocation].edges.push({
@@ -43,7 +52,7 @@ const addLocationToGraph = (graph, newLocation, newLocationCoords) => {
         geometry: geometry
       });
     }
-  });
+  };
 
   return graph;
 };
@@ -107,14 +116,14 @@ const dijkstra = (graph, start, end, costType) => {
 };
 
 // Main function to find optimal routes. Set regenerate to false if there are no changes that affect the graph.
-const findBestRoutes = ( start, end, startCoords, endCoords ) => {
+const findBestRoutes = async ( start, end, startCoords, endCoords ) => {
   let graph = readGraph();
 
   if ( !graph[start] ) {
-    graph = addLocationToGraph(graph, start, startCoords);
+    graph = await addLocationToGraph(graph, start, startCoords);
   }
   if ( !graph[end] ) {
-    graph = addLocationToGraph(graph, end, endCoords);
+    graph = await addLocationToGraph(graph, end, endCoords);
   }
 
   const fastestRoute = dijkstra(graph, start, end, "time");

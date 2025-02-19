@@ -7,14 +7,20 @@ const GEOJSON = JSON.parse(fs.readFileSync('./data/locations.geojson', 'utf8'));
 
 // Save graph into json file
 const saveGraph = (graph) => {
+  console.log("Saving graph to file...");
   const filePath = path.join(__dirname, 'graph.json');
   fs.writeFileSync(filePath, JSON.stringify(graph, null, 2));
 };
 
 // Convert GeoJSON to graph representation
-const buildGraph = (geojson = GEOJSON) => {
+const buildGraph = async (geojson = GEOJSON) => {
   const graph = {};
   const locations = geojson.features;
+  const processedEdges = {};
+  processedEdges.air = 0;
+  processedEdges.sea = 0;
+  processedEdges.truck = 0;
+  processedEdges.rail = 0;
 
   // Initialize empty adjacency list for each location
   locations.forEach((location) => {
@@ -32,33 +38,38 @@ const buildGraph = (geojson = GEOJSON) => {
       const sharedModes = locA.properties.modes.filter(mode => locB.properties.modes.includes(mode));
 
       if (sharedModes.length > 0) {
-        sharedModes.forEach((mode) => {
-
+        for (const mode of sharedModes) {
           let distance, emission, time, geometry;
           const fromCoords = locA.geometry.coordinates;
           const toCoords = locB.geometry.coordinates;
 
+          
           if ( mode === "air") {
             [distance, emission, time, geometry] = findAirRoute(fromCoords, toCoords);
           } else if ( mode === "sea" ) {
             [distance, emission, time, geometry] = findSeaRoute(fromCoords, toCoords);
           } else if ( mode === "truck" ) {
-            [distance, emission, time, geometry] = findTruckRoute(fromCoords, toCoords);
+            try {
+              [distance, emission, time, geometry] = await findTruckRoute(fromCoords, toCoords);
+            } catch (error) {
+              console.log(`Unable to find ${mode} route between ${locA.properties.name} and ${locB.properties.name}:`, error.response.data.message);
+              continue;
+            }
           } else if ( mode === "rail" ) {
             if ( locA.properties.network === locB.properties.network ) {
               [distance, emission, time, geometry] = findRailRoute(fromCoords, toCoords);
             } else {
-              return;
+              continue;
             }
             
           } else {
             console.log("Transportation mode not recognized:", mode);
-            return;
+            continue;
           }
 
           if ( !distance || !emission || !time || !geometry ) {
             console.log(`Unable to find ${mode} route between ${locA.properties.name} and ${locB.properties.name}`);
-            return;
+            continue;
           }
   
           // Add bidirectional edges
@@ -79,7 +90,10 @@ const buildGraph = (geojson = GEOJSON) => {
             time: time,
             geometry: geometry
           });
-        });
+          
+          processedEdges[mode]++;
+          console.log(processedEdges);
+        };
       }
     }
   }
@@ -88,9 +102,11 @@ const buildGraph = (geojson = GEOJSON) => {
 };
 
 if (require.main === module) {
-  const args = process.argv.slice(2); // Get command-line arguments
-  graph = buildGraph(geojson = args[0]); // Pass the first argument to the function
-  saveGraph(graph); // Save the graph to a file
+  (async () => {
+    const args = process.argv.slice(2); // Get command-line arguments
+    const graph = await buildGraph(geojson = args[0]);
+    saveGraph(graph); // Save the graph to a file
+  })();
 }
 
 module.exports = buildGraph;

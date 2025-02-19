@@ -15,7 +15,7 @@ app.use(cors())
 
 app.use(express.json())
 
-app.get("/routes", (req, res) => {
+app.get("/routes", async (req, res) => {
   try {
     const origin = req.query.origin;
     const destination = req.query.destination;
@@ -32,7 +32,7 @@ app.get("/routes", (req, res) => {
       return res.status(400).json({ error: "Invalid origin or destination coordinates" });
     }
 
-    const routes = findBestRoutes(origin, destination, originCoordinatesArray, destinationCoordinatesArray);
+    const routes = await findBestRoutes(origin, destination, originCoordinatesArray, destinationCoordinatesArray);
 
     res.json(routes);
 
