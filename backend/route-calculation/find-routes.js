@@ -18,11 +18,13 @@ const haversineDistance = ([lon1, lat1], [lon2, lat2]) => {
 
 // !!! Not implemented !!!
 const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 50;
+  const emission_per_ton_km = 284;
+  const totalLoad = 140;
   const speed_km_h = 800;
 
   const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
-  const emission = distance * emission_per_ton_km;
+  const emission = (distance * emission_per_ton_km / totalLoad / 1000);
+  console.log("A_Emission: ", emission);
   const time = distance / speed_km_h;
   const geometry = {
     type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
@@ -37,7 +39,8 @@ const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
 };
 
 const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 1;
+  const emission_per_ton_km = 25;
+  const totalLoad = 165000;
 
   const originCoords = [lon1, lat1];
   const destinationCoords = [lon2, lat2];
@@ -60,7 +63,8 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
   const route = JSON.parse(dataToSend);
 
   const distance = route.properties.length;
-  const emission = distance * emission_per_ton_km;
+  const emission = (distance * emission_per_ton_km / totalLoad / 1000);
+  console.log("S_Emission: ", emission);
   const time = route.properties.duration_hours;
   const geometry = {
     type: "LineString", coordinates: route.geometry.coordinates
@@ -70,6 +74,8 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
 };
 
 const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
+  const emission_per_ton_km = 105;
+  const totalLoad = 35;
   // Don't bother caculating very long routes
   if (haversineDistance([lon1, lat1], [lon2, lat2]) > maxDistance) {
     console.log("   vvv Route too long vvv");
@@ -88,7 +94,7 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
 
   const route = response.data.routes[0];
   const distance = route.distance / 1000;
-  const emission = (distance) * (30 / 100) * 2.65;
+  const emission = (distance * emission_per_ton_km / totalLoad / 1000);
   const time = route.duration / 60 / 60;
   const geometry = route.geometry;
 
@@ -97,11 +103,12 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
 
 // !!! Not implemented !!!
 const findRailRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 6;
+  const emission_per_ton_km = 65;
   const speed_km_h = 100;
+  const totalLoad = 1500;
 
   const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
-  const emission = distance * emission_per_ton_km;
+  const emission = (distance * emission_per_ton_km / totalLoad / 1000);
   const time = distance / speed_km_h;
   const geometry = {
     type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
