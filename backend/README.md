@@ -32,6 +32,10 @@ Make sure you have [Node.js](https://nodejs.org/en) installed. Then, run:
 ```
 npm install
 ```
+Install `searoute` python library.
+```
+pip install searoute
+```
 
 ### 2. Add Your API Token as a Local Environment Variable
 
