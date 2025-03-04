@@ -11,70 +11,35 @@ import './Map.css';
 const API_TOKEN = import.meta.env.VITE_API_TOKEN;
 const GEOCODE_API = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
 
-const RouteForm = styled.div`
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1001;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 1rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  backdrop-filter: blur(8px);
-  width: 280px;
-  transition: all 0.3s ease;
-
-  ${props => props.isSidebarOpen && `
-    left: 416px;
-  `}
-`;
-
-const InputGroup = styled.div`
-  position: relative;
+const PageContainer = styled.div`
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  margin: 0.25rem 0;
+  flex-direction: column;
+  height: 100vh;
+  padding: 20px;
+  gap: 20px;
+  max-height: 100vh;
+  overflow: hidden;
 `;
 
-const InputWrapper = styled.div`
-  flex: 1;
-  margin-right: 16px;
+const SearchContainer = styled.div`
+  display: flex;
+  gap: 20px;
+  padding: 10px 20px;
 `;
 
-const SwapButton = styled.button`
-  background-color: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+const InputContainer = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-top: 24px;
-  margin-right: 4px;
-
-  &:hover {
-    background-color: #1d4ed8;
-  }
-
-  svg {
-    width: 20px;
-    height: 20px;
-  }
+  gap: 10px;
 `;
 
-const Input = styled.input`
-  width: 100%;
-  padding: 0.5rem;
-  margin: 0.25rem 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  display: block;
+const SearchInput = styled.input`
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  width: 300px;
+  font-size: 16px;
+  transition: all 0.2s;
 
   &:focus {
     outline: none;
@@ -83,26 +48,60 @@ const Input = styled.input`
   }
 `;
 
-const Button = styled.button`
-  width: 100%;
-  padding: 0.5rem;
-  margin: 0.5rem 0 0;
+const SwapButton = styled.button`
   background-color: #2563eb;
   color: white;
   border: none;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: block;
+  transition: all 0.2s;
+  margin: 0 10px;
 
   &:hover {
     background-color: #1d4ed8;
+    transform: scale(1.05);
+  }
+`;
+
+const MapContainer = styled.div`
+  flex: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  max-height: calc(100vh - 120px);
+`;
+
+const RouteInfoOverlay = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(8px);
+  width: 280px;
+  z-index: 1000;
+`;
+
+const InfoSection = styled.div`
+  margin-bottom: 1rem;
+  
+  h3 {
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 0.5rem;
   }
 
-  &:disabled {
-    background-color: #93c5fd;
-    cursor: not-allowed;
+  p {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+    color: #1f2937;
   }
 `;
 
@@ -113,6 +112,7 @@ const Map = () => {
   const map = useRef(null);
   const [origin, setOrigin] = useState(location.state?.origin || '');
   const [destination, setDestination] = useState(location.state?.destination || '');
+  const [weight, setWeight] = useState(location.state?.weight || '');
   const [routeData, setRouteData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
@@ -139,23 +139,101 @@ const Map = () => {
     mapboxgl.accessToken = API_TOKEN;
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: 'mapbox://styles/mapbox/light-v11',
       center: [0, 20],
       zoom: 1.5,
       pitch: 0,
       bearing: 0,
-      projection: 'mercator' // Ensure 2D view
+      projection: 'mercator'
     });
 
     // Add navigation control
     map.current.addControl(new mapboxgl.NavigationControl());
 
     map.current.on('style.load', () => {
+      const layers = map.current.getStyle().layers;
+      for (const layer of layers) {
+        if (layer.type === 'symbol' && 
+            layer.layout && 
+            layer.layout['text-field'] && 
+            (layer.id.includes('label') || layer.id.includes('place'))) {
+          map.current.setLayoutProperty(layer.id, 'visibility', 'none');
+        }
+      }
       setMapInitialized(true);
     });
 
-    return () => map.current?.remove();
+    return () => {
+      if (map.current) {
+        const markers = document.getElementsByClassName('mapboxgl-marker');
+        while (markers.length > 0) {
+          markers[0].remove();
+        }
+        map.current.remove();
+      }
+    };
   }, []);
+
+  // Add new useEffect for markers
+  useEffect(() => {
+    const addLocationMarker = async (location, type) => {
+      if (!location || !map.current) return;
+      
+      try {
+        const coords = await getCoordinates(location);
+        if (!coords) return;
+
+        // Create marker element
+        const markerEl = document.createElement('div');
+        markerEl.className = `marker-${type}`;
+        markerEl.style.width = '24px';
+        markerEl.style.height = '24px';
+        markerEl.style.borderRadius = '50%';
+        markerEl.style.border = '3px solid #fff';
+        markerEl.style.backgroundColor = type === 'origin' ? '#2563eb' : '#dc2626';
+        markerEl.style.boxShadow = '0 0 0 2px rgba(0,0,0,0.25)';
+        markerEl.style.cursor = 'pointer';
+
+        // Add text element
+        const textEl = document.createElement('div');
+        textEl.style.position = 'absolute';
+        textEl.style.top = '30px';
+        textEl.style.left = '50%';
+        textEl.style.transform = 'translateX(-50%)';
+        textEl.style.backgroundColor = 'white';
+        textEl.style.padding = '4px 8px';
+        textEl.style.borderRadius = '4px';
+        textEl.style.fontSize = '14px';
+        textEl.style.fontWeight = 'bold';
+        textEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        textEl.style.whiteSpace = 'nowrap';
+        textEl.textContent = location;
+        markerEl.appendChild(textEl);
+
+        // Create and add marker
+        new mapboxgl.Marker({
+          element: markerEl,
+          anchor: 'center'
+        })
+        .setLngLat(coords)
+        .addTo(map.current);
+      } catch (error) {
+        console.error(`Error adding ${type} marker:`, error);
+      }
+    };
+
+    // Remove existing markers
+    const markers = document.getElementsByClassName('mapboxgl-marker');
+    while (markers.length > 0) {
+      markers[0].remove();
+    }
+
+    // Add new markers
+    if (mapInitialized) {
+      addLocationMarker(origin, 'origin');
+      addLocationMarker(destination, 'destination');
+    }
+  }, [origin, destination, mapInitialized]);
 
   // Function to calculate and display route
   const calculateRoute = async () => {
@@ -351,19 +429,12 @@ const Map = () => {
   const handleRouteClick = (feature, route) => {
     setSelectedSegment(null);
     
-    // Poistetaan korostetun reitin käsittely
+    const weightValue = parseFloat(weight) || 1; // Default to 1 if no weight entered
+    
     setSelectedRoute({
-      // Poistetaan type jos segmenttejä on enemmän kuin 1
-      ...(route.geojson.features.length === 1 && {
-        type: translateTransportType(feature.properties.transport)
-      }),
-      length: 10000,
+      length: route.totalDistance.toFixed(0) || '-',
       duration: formatDuration(route.totalTime * 3600) || '-',
-      emissions: route.totalEmission?.toFixed(2) || '-',
-      carbonFootprint: (route.totalEmission / 10000).toFixed(2) || '-',
-      ecoRating: calculateEcoRating(route.totalEmission),
-      hasGreenerAlternative: routeToShow === 'fast' && 
-        data.lowestEmission.totalEmission < route.totalEmission,
+      emissions: (route.totalEmission * weightValue).toFixed(2) || '-',
       segments: route.geojson.features.map(feature => ({
         transport: translateTransportType(feature.properties.transport),
         from: feature.properties.from || '-',
@@ -373,109 +444,68 @@ const Map = () => {
   };
 
   return (
-    <div className={`map-container ${selectedRoute ? 'with-sidebar' : ''}`}>
-      {selectedRoute && (
-        <div className="route-info-sidebar">
-          <h2>Reitin tiedot</h2>
-          <button className="close-button" onClick={() => setSelectedRoute(null)}>
-            ✕
+    <PageContainer>
+      <SearchContainer>
+        <InputContainer>
+          <SearchInput
+            type="text"
+            placeholder="Origin"
+            value={origin}
+            onChange={(e) => setOrigin(e.target.value)}
+          />
+          <SwapButton
+            onClick={handleSwapLocations}
+            title="Swap origin and destination"
+          >
+            ⇅
+          </SwapButton>
+          <SearchInput
+            type="text"
+            placeholder="Destination"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+          />
+          <SearchInput
+            type="number"
+            placeholder="Weight (kg)"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            style={{ width: '150px' }}
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            style={{
+              padding: '8px 20px',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            {isLoading ? 'Calculating...' : 'Calculate Route'}
           </button>
-          
-          <div className="route-details">
-            <div className="info-section">
-              <h3>Perustiedot</h3>
-              {selectedRoute.type && <p>Kuljetusmuoto: {selectedRoute.type}</p>}
-              <p>Kokonaispituus: {selectedRoute.length} km</p>
-              <p>Arvioitu kesto: {selectedRoute.duration}</p>
-            </div>
+        </InputContainer>
+      </SearchContainer>
 
-            <div className="info-section">
-              <h3>Ympäristövaikutukset</h3>
-              <p>CO2 päästöt: {selectedRoute.emissions} kg</p>
-              <p>Hiilijalanjälki per km: {selectedRoute.carbonFootprint} kg/km</p>
-            </div>
-
-            <div className="info-section">
-              <h3>Ympäristöystävällisyys</h3>
-              <div className="eco-rating">
-                <p>Reitin ekologisuusluokitus: {selectedRoute.ecoRating}</p>
-                <p>Vihreämpi vaihtoehto saatavilla: {selectedRoute.hasGreenerAlternative ? 'Kyllä' : 'Ei'}</p>
-              </div>
-            </div>
-
-            {selectedRoute.segments && selectedRoute.segments.length > 0 && (
-              <div className="info-section">
-                <h3>Reitin osat</h3>
-                {selectedRoute.segments.map((segment, index) => (
-                  <div 
-                    key={index} 
-                    className={`route-segment ${selectedSegment === index ? 'selected' : ''}`}
-                    onClick={() => setSelectedSegment(selectedSegment === index ? null : index)}
-                  >
-                    <div className="segment-header">
-                      <p>Osuus {index + 1}: {segment.transport}</p>
-                      <span className="expand-icon">
-                        {selectedSegment === index ? '▼' : '▶'}
-                      </span>
-                    </div>
-                    
-                    {selectedSegment === index && (
-                      <div className="segment-details">
-                        <p>Lähtö: {segment.from}</p>
-                        <p>Määränpää: {segment.to}</p>
-                        <p>Pituus: {(10000 / selectedRoute.segments.length).toFixed(1)} km</p>
-                        <p>Kesto: {formatDuration((routeData.totalTime * 3600) / selectedRoute.segments.length)}</p>
-                        <p>Päästöt: {(routeData.totalEmission / selectedRoute.segments.length).toFixed(2)} kg</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
-      <RouteForm isSidebarOpen={!!selectedRoute}>
-        <form onSubmit={handleSubmit}>
-          <InputGroup>
-            <InputWrapper>
-              <Input
-                type="text"
-                placeholder="Origin"
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
-              />
-              <Input
-                type="text"
-                placeholder="Destination"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-              />
-              <Button 
-                type="submit" 
-                disabled={isLoading} 
-                style={{ 
-                  width: '85%', 
-                  marginLeft: '13%',
-                  marginRight: '0'
-                }}
-              >
-                {isLoading ? 'Calculating...' : 'Update Route'}
-              </Button>
-            </InputWrapper>
-            <SwapButton 
-              type="button" 
-              onClick={handleSwapLocations}
-              title="Vaihda lähtö- ja kohdepaikka"
-            >
-              ⇅
-            </SwapButton>
-          </InputGroup>
-        </form>
-      </RouteForm>
-      <div ref={mapContainer} id="map-container" />
-    </div>
+      <MapContainer>
+        <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
+        {selectedRoute && (
+          <RouteInfoOverlay>
+            <InfoSection>
+              <h3>Route Information</h3>
+              <p><strong>From:</strong> {origin}</p>
+              <p><strong>To:</strong> {destination}</p>
+              <p><strong>Total Distance:</strong> {selectedRoute.length} km</p>
+              <p><strong>Estimated Duration:</strong> {selectedRoute.duration}</p>
+              <p><strong>CO2 Emissions:</strong> {selectedRoute.emissions} g</p>
+            </InfoSection>
+          </RouteInfoOverlay>
+        )}
+      </MapContainer>
+    </PageContainer>
   );
 };
 
