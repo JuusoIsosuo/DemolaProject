@@ -73,6 +73,7 @@ const Title = styled.h1`
 const Home = () => {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
+  const [weight, setWeight] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -82,6 +83,7 @@ const Home = () => {
         state: { 
           origin, 
           destination,
+          weight,
           shouldCalculateRoute: true 
         }
       });
@@ -96,22 +98,27 @@ const Home = () => {
         transition={{ duration: 0.5 }}
       >
         <Form onSubmit={handleSubmit}>
-          <Title>Route Planner</Title>
+          <Title>Route Calculator</Title>
           <Input
             type="text"
-            placeholder="Enter origin"
+            placeholder="Origin"
             value={origin}
             onChange={(e) => setOrigin(e.target.value)}
-            required
           />
           <Input
             type="text"
-            placeholder="Enter destination"
+            placeholder="Destination"
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
-            required
           />
-          <Button type="submit">Get Route</Button>
+          <Input
+            type="number"
+            placeholder="Weight (kg)"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            style={{ maxWidth: '240px' }}
+          />
+          <Button type="submit">Calculate Route</Button>
         </Form>
       </motion.div>
     </Container>
