@@ -14,37 +14,63 @@ const GEOCODE_API = "https://api.mapbox.com/geocoding/v5/mapbox.places/";
 const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 90vh;
   padding: 20px;
-  gap: 20px;
-  max-height: 100vh;
+  gap: 15px;
+  max-height: 90vh;
   overflow: hidden;
 `;
 
 const SearchContainer = styled.div`
   display: flex;
-  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
   padding: 10px 20px;
 `;
 
 const InputContainer = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
 `;
 
 const SearchInput = styled.input`
-  padding: 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  width: 300px;
-  font-size: 16px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  width: 200px;
+  font-size: 14px;
   transition: all 0.2s;
 
   &:focus {
     outline: none;
     border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  }
+`;
+
+const WeightContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+`;
+
+const WeightInput = styled(SearchInput)`
+  width: 80px;
+`;
+
+const UnitSelect = styled.select`
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: white;
+  cursor: pointer;
+  width: 60px;
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
   }
 `;
 
@@ -53,18 +79,68 @@ const SwapButton = styled.button`
   color: white;
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
-  margin: 0 10px;
+  margin: 0 5px;
 
   &:hover {
     background-color: #1d4ed8;
-    transform: scale(1.05);
+  }
+`;
+
+const CalculateButton = styled.button`
+  padding: 8px 16px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+
+  &:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+  }
+`;
+
+const RouteTypeSelect = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-left: 10px;
+`;
+
+const RouteTypeButton = styled.button`
+  padding: 8px 16px;
+  background-color: ${props => {
+    if (props.active) {
+      return props.isGreen ? '#059669' : '#2563eb';
+    }
+    return 'white';
+  }};
+  color: ${props => props.active ? 'white' : props.isGreen ? '#059669' : '#2563eb'};
+  border: 1px solid ${props => props.isGreen ? '#059669' : '#2563eb'};
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: ${props => {
+      if (props.active) {
+        return props.isGreen ? '#047857' : '#1d4ed8';
+      }
+      return '#f8fafc';
+    }};
   }
 `;
 
@@ -116,9 +192,10 @@ const Map = () => {
   const [routeData, setRouteData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
-  const [routeToShow, setRouteToShow] = useState('green');
+  const [routeType, setRouteType] = useState(location.state?.routeType || 'fastest');
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [selectedSegment, setSelectedSegment] = useState(null);
+  const [weightUnit, setWeightUnit] = useState(location.state?.weightUnit || 'kg');
 
   // Convert address to coordinates using Mapbox Geocoding API
   const getCoordinates = async (address) => {
@@ -257,7 +334,7 @@ const Map = () => {
         showRoutes(response.data);
 
         // Avataan sivupalkki automaattisesti ensimmäisellä reitillä
-        const routeData = routeToShow === 'green' ? response.data.lowestEmission : response.data.fastest;
+        const routeData = routeType === 'fastest' ? response.data.fastest : response.data.lowestEmission;
         if (routeData.geojson.features.length > 0) {
           handleRouteClick(routeData.geojson.features[0], routeData);
         }
@@ -284,10 +361,20 @@ const Map = () => {
 
   // Update route that is shown
   useEffect(() => {
-    if ( routeData ) {
+    if (routeData) {
       showRoutes(routeData);
     }
-  }, [routeToShow]);
+  }, [routeType, routeData]);
+
+  // Add new useEffect for updating route information when route type changes
+  useEffect(() => {
+    if (routeData) {
+      const currentRoute = routeType === 'fastest' ? routeData.fastest : routeData.lowestEmission;
+      if (currentRoute.geojson.features.length > 0) {
+        handleRouteClick(currentRoute.geojson.features[0], currentRoute);
+      }
+    }
+  }, [routeType]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -317,14 +404,14 @@ const Map = () => {
       map.current.removeSource('highlighted-route');
     }
 
-    const routeData = routeToShow === 'green' ? data.lowestEmission : data.fastest;
+    const routeData = routeType === 'fastest' ? data.fastest : data.lowestEmission;
 
     map.current.addSource('routes', {
       type: 'geojson',
       data: routeData.geojson,
     });
 
-    // Lisätään reitit
+    // Add routes for each transport type
     ['sea', 'air', 'truck', 'rail'].forEach(transportType => {
       map.current.addLayer({
         id: `route-${transportType}`,
@@ -339,7 +426,7 @@ const Map = () => {
         filter: ['==', 'transport', transportType],
       });
 
-      // Lisätään click event jokaiselle reittityypille
+      // Add click event for each route type
       map.current.on('click', `route-${transportType}`, (e) => {
         if (e.features.length > 0) {
           const clickedFeature = e.features[0];
@@ -347,7 +434,7 @@ const Map = () => {
         }
       });
 
-      // Lisätään hover-efekti
+      // Add hover effect
       map.current.on('mouseenter', `route-${transportType}`, () => {
         map.current.getCanvas().style.cursor = 'pointer';
       });
@@ -357,17 +444,19 @@ const Map = () => {
       });
     });
 
-    // Fit the map to the route bounds
-    const coordinates = routeData.geojson.features[0].geometry.coordinates;
-    const bounds = coordinates.reduce((bounds, coord) => {
-      return bounds.extend(coord);
-    }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+    // Only fit bounds when calculating new route, not when switching route types
+    if (!map.current.getSource('routes')) {
+      const coordinates = routeData.geojson.features[0].geometry.coordinates;
+      const bounds = coordinates.reduce((bounds, coord) => {
+        return bounds.extend(coord);
+      }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
 
-    map.current.fitBounds(bounds, {
-      padding: 50,
-      pitch: 0,
-      bearing: 0
-    });
+      map.current.fitBounds(bounds, {
+        padding: 50,
+        pitch: 0,
+        bearing: 0
+      });
+    }
   }
 
   // Lisätään apufunktioita
@@ -429,7 +518,10 @@ const Map = () => {
   const handleRouteClick = (feature, route) => {
     setSelectedSegment(null);
     
-    const weightValue = parseFloat(weight) || 1; // Default to 1 if no weight entered
+    let weightValue = parseFloat(weight) || 1; // Default to 1 if no weight entered
+    if (weightUnit === 't') {
+      weightValue = weightValue * 1000; // Convert tons to kg
+    }
     
     setSelectedRoute({
       length: route.totalDistance.toFixed(0) || '-',
@@ -446,48 +538,60 @@ const Map = () => {
   return (
     <PageContainer>
       <SearchContainer>
-        <InputContainer>
-          <SearchInput
-            type="text"
-            placeholder="Origin"
-            value={origin}
-            onChange={(e) => setOrigin(e.target.value)}
-          />
-          <SwapButton
-            onClick={handleSwapLocations}
-            title="Swap origin and destination"
-          >
-            ⇅
-          </SwapButton>
-          <SearchInput
-            type="text"
-            placeholder="Destination"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-          />
-          <SearchInput
+        <SearchInput
+          type="text"
+          placeholder="Origin"
+          value={origin}
+          onChange={(e) => setOrigin(e.target.value)}
+        />
+        <SwapButton
+          onClick={handleSwapLocations}
+          title="Swap origin and destination"
+        >
+          ⇅
+        </SwapButton>
+        <SearchInput
+          type="text"
+          placeholder="Destination"
+          value={destination}
+          onChange={(e) => setDestination(e.target.value)}
+        />
+        <WeightContainer>
+          <WeightInput
             type="number"
-            placeholder="Weight (kg)"
+            placeholder="Weight"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
-            style={{ width: '150px' }}
           />
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            style={{
-              padding: '8px 20px',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
+          <UnitSelect
+            value={weightUnit}
+            onChange={(e) => setWeightUnit(e.target.value)}
           >
-            {isLoading ? 'Calculating...' : 'Calculate Route'}
-          </button>
-        </InputContainer>
+            <option value="kg">kg</option>
+            <option value="t">t</option>
+          </UnitSelect>
+        </WeightContainer>
+        <CalculateButton
+          onClick={handleSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Calculating...' : 'Calculate Route'}
+        </CalculateButton>
+        <RouteTypeSelect>
+          <RouteTypeButton
+            active={routeType === 'fastest'}
+            onClick={() => setRouteType('fastest')}
+          >
+            Fastest Route
+          </RouteTypeButton>
+          <RouteTypeButton
+            active={routeType === 'green'}
+            onClick={() => setRouteType('green')}
+            isGreen={true}
+          >
+            Lowest Emission
+          </RouteTypeButton>
+        </RouteTypeSelect>
       </SearchContainer>
 
       <MapContainer>

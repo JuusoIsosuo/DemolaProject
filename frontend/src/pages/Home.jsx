@@ -42,6 +42,69 @@ const Input = styled.input`
   }
 `;
 
+const WeightContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 240px;
+  margin: 0.5rem auto;
+`;
+
+const WeightInput = styled(Input)`
+  margin: 0;
+  flex: 1;
+`;
+
+const UnitSelect = styled.select`
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+  width: 70px;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+`;
+
+const RouteTypeSelect = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  max-width: 240px;
+  margin: 1rem auto;
+`;
+
+const RouteTypeButton = styled.button`
+  flex: 1;
+  padding: 0.75rem;
+  background-color: ${props => {
+    if (props.active) {
+      return props.isGreen ? '#059669' : '#2563eb';
+    }
+    return 'white';
+  }};
+  color: ${props => props.active ? 'white' : props.isGreen ? '#059669' : '#2563eb'};
+  border: 1px solid ${props => props.isGreen ? '#059669' : '#2563eb'};
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: ${props => {
+      if (props.active) {
+        return props.isGreen ? '#047857' : '#1d4ed8';
+      }
+      return '#f8fafc';
+    }};
+  }
+`;
+
 const Button = styled.button`
   width: 100%;
   max-width: 240px;
@@ -74,6 +137,8 @@ const Home = () => {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [weight, setWeight] = useState('');
+  const [weightUnit, setWeightUnit] = useState('kg');
+  const [routeType, setRouteType] = useState('fastest');
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -84,6 +149,8 @@ const Home = () => {
           origin, 
           destination,
           weight,
+          weightUnit,
+          routeType,
           shouldCalculateRoute: true 
         }
       });
@@ -111,13 +178,38 @@ const Home = () => {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
           />
-          <Input
-            type="number"
-            placeholder="Weight (kg)"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            style={{ maxWidth: '240px' }}
-          />
+          <WeightContainer>
+            <WeightInput
+              type="number"
+              placeholder="Weight"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+            />
+            <UnitSelect
+              value={weightUnit}
+              onChange={(e) => setWeightUnit(e.target.value)}
+            >
+              <option value="kg">kg</option>
+              <option value="t">t</option>
+            </UnitSelect>
+          </WeightContainer>
+          <RouteTypeSelect>
+            <RouteTypeButton
+              type="button"
+              active={routeType === 'fastest'}
+              onClick={() => setRouteType('fastest')}
+            >
+              Fastest Route
+            </RouteTypeButton>
+            <RouteTypeButton
+              type="button"
+              active={routeType === 'green'}
+              onClick={() => setRouteType('green')}
+              isGreen={true}
+            >
+              Lowest Emission
+            </RouteTypeButton>
+          </RouteTypeSelect>
           <Button type="submit">Calculate Route</Button>
         </Form>
       </motion.div>
