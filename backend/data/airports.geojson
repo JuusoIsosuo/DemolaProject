@@ -15,23 +15,100 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Paris Charles de Gaulle Airport",
-        "country": "France"
+        "name": "John F. Kennedy International Airport",
+        "country": "United States"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [2.55, 49.0097]
+        "coordinates": [-73.7781, 40.6413]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Amsterdam Schiphol Airport",
-        "country": "Netherlands"
+        "name": "São Paulo/Guarulhos – Governador André Franco Montoro International Airport",
+        "country": "Brazil"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [4.7639, 52.3105]
+        "coordinates": [-46.4695, -23.4356]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Buenos Aires Ministro Pistarini International Airport (Ezeiza)",
+        "country": "Argentina"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-58.5358, -34.8222]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Dubai International Airport",
+        "country": "United Arab Emirates"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [55.3644, 25.2532]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Tokyo Haneda Airport",
+        "country": "Japan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7798, 35.5494]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sydney Kingsford Smith Airport",
+        "country": "Australia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [151.1772, -33.9399]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Cairo International Airport",
+        "country": "Egypt"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [31.4056, 30.1219]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Toronto Pearson International Airport",
+        "country": "Canada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6306, 43.6777]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hong Kong International Airport",
+        "country": "Hong Kong"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [113.9185, 22.3080]
       }
     }
   ]
