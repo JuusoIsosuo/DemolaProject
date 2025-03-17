@@ -17,7 +17,7 @@ const haversineDistance = ([lon1, lat1], [lon2, lat2]) => {
   return 2 * R * Math.asin(Math.sqrt(a));
 };
 
-// !!! Not implemented !!!
+
 const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 284;
   const totalLoad = 140;
