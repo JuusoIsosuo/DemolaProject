@@ -23,5 +23,8 @@
     { "type": "Feature", "properties": { "name": "Lagos", "country": "Nigeria", "modes": ["truck", "sea", "air"] }, "geometry": { "type": "Point", "coordinates": [3.3792, 6.5244] } },
     { "type": "Feature", "properties": { "name": "Istanbul", "country": "Turkey", "modes": ["truck", "sea", "air", "rail"], "network": "European Rail" }, "geometry": { "type": "Point", "coordinates": [28.9784, 41.0082] } },
     { "type": "Feature", "properties": { "name": "Jakarta", "country": "Indonesia", "modes": ["truck", "sea", "air"] }, "geometry": { "type": "Point", "coordinates": [106.8456, -6.2088] } }
+
+
+
   ]
 }
