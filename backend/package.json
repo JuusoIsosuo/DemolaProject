@@ -13,10 +13,12 @@
     "nodemon": "^3.1.9"
   },
   "dependencies": {
+    "@turf/turf": "^7.2.0",
     "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "searoute-js": "^0.1.0"
+    "searoute-js": "^0.1.0",
+    "turf": "^3.0.14"
   }
 }

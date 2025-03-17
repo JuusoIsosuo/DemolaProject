@@ -2,8 +2,11 @@ const fs = require("fs");
 const path = require('path');
 const { findAirRoute, findSeaRoute, findTruckRoute, findRailRoute } = require('./find-routes.js')
 
-// Load the GeoJSON file
-const GEOJSON = JSON.parse(fs.readFileSync('./data/locations.geojson', 'utf8'));
+// Load the GeoJSON files
+const AIRPORTS = JSON.parse(fs.readFileSync('./data/airports.geojson', 'utf8'));
+const PORTS = JSON.parse(fs.readFileSync('./data/ports.geojson', 'utf8'));
+const RAILWAYS = JSON.parse(fs.readFileSync('./data/railway_connections.geojson', 'utf8'));
+const RAILWAY_STATIONS = JSON.parse(fs.readFileSync('./data/railway_stations.geojson', 'utf8'));
 
 // Save graph into json file
 const saveGraph = (graph) => {
@@ -13,16 +16,20 @@ const saveGraph = (graph) => {
 };
 
 // Convert GeoJSON to graph representation
-const buildGraph = async (geojson = GEOJSON) => {
+const buildGraph = async () => {
   const graph = {};
-  const locations = geojson.features;
-  const processedEdges = {};
+  const airport_locations = AIRPORTS.features;
+  const port_locations = PORTS.features;
+  const railway_connections = RAILWAYS.features;
+  const railway_locations = RAILWAY_STATIONS.features;
+  const locations = [...airport_locations, ...port_locations, ...railway_locations];
 
   // Initialize processed edges counter
+  const processedEdges = {};
   processedEdges.air = 0;
   processedEdges.sea = 0;
-  processedEdges.truck = 0;
   processedEdges.rail = 0;
+  processedEdges.truck = 0;
 
   // Initialize empty adjacency list for each location
   locations.forEach((location) => {
@@ -31,56 +38,120 @@ const buildGraph = async (geojson = GEOJSON) => {
       edges: [] };
   });
 
-  // Generate edges between locations with shared transport modes
+  // Generate edges between airport locations
+  for (let i = 0; i < airport_locations.length; i++) {
+    for (let j = i + 1; j < airport_locations.length; j++) {
+      const locA = airport_locations[i];
+      const locB = airport_locations[j];
+      const fromCoords = locA.geometry.coordinates;
+      const toCoords = locB.geometry.coordinates;
+
+      const [distance, emission, time, geometry] = findAirRoute(fromCoords, toCoords);
+      if (distance && emission && time && geometry) {
+        graph[locA.properties.name].edges.push({
+          node: locB.properties.name,
+          transport: "air",
+          distance: distance,
+          emission: emission,
+          time: time,
+          geometry: geometry
+        });
+
+        graph[locB.properties.name].edges.push({
+          node: locA.properties.name,
+          transport: "air",
+          distance: distance,
+          emission: emission,
+          time: time,
+          geometry: geometry
+        });
+
+        processedEdges.air++;
+        console.log(processedEdges);
+      }
+    }
+  }
+
+  // Generate edges between port locations
+  for (let i = 0; i < port_locations.length; i++) {
+    for (let j = i + 1; j < port_locations.length; j++) {
+      const locA = port_locations[i];
+      const locB = port_locations[j];
+      const fromCoords = locA.geometry.coordinates;
+      const toCoords = locB.geometry.coordinates;
+
+      const [distance, emission, time, geometry] = findSeaRoute(fromCoords, toCoords);
+      if (distance && emission && time && geometry) {
+        graph[locA.properties.name].edges.push({
+          node: locB.properties.name,
+          transport: "sea",
+          distance: distance,
+          emission: emission,
+          time: time,
+          geometry: geometry
+        });
+
+        graph[locB.properties.name].edges.push({
+          node: locA.properties.name,
+          transport: "sea",
+          distance: distance,
+          emission: emission,
+          time: time,
+          geometry: geometry
+        });
+
+        processedEdges.sea++;
+        console.log(processedEdges);
+      }
+    }
+  }
+
+  // Generate edges between railway locations
+  for (let i = 0; i < railway_connections.length; i++) {
+    const connection = railway_connections[i];
+    const [fromName, toName] = connection.properties.route;
+    const fromCoords = connection.geometry.coordinates[0];
+    const toCoords = connection.geometry.coordinates[connection.geometry.coordinates.length - 1];
+
+    const [distance, emission, time, geometry] = findRailRoute(fromCoords, toCoords);
+    if (distance && emission && time && geometry) {
+      graph[fromName].edges.push({
+        node: toName,
+        transport: "rail",
+        distance: distance,
+        emission: emission,
+        time: time,
+        geometry: geometry
+      });
+
+      graph[toName].edges.push({
+        node: fromName,
+        transport: "rail",
+        distance: distance,
+        emission: emission,
+        time: time,
+        geometry: geometry
+      });
+
+      processedEdges.rail++;
+      console.log(processedEdges);
+    }
+  }
+
+  // Generate truck routes between all locations
   for (let i = 0; i < locations.length; i++) {
     for (let j = i + 1; j < locations.length; j++) {
       const locA = locations[i];
       const locB = locations[j];
+      const fromCoords = locA.geometry.coordinates;
+      const toCoords = locB.geometry.coordinates;
 
-      // Find shared transportation modes between locations
-      const sharedModes = locA.properties.modes.filter(mode => locB.properties.modes.includes(mode));
-
-      if (sharedModes.length > 0) {
-        for (const mode of sharedModes) {
-          let distance, emission, time, geometry;
-          const fromCoords = locA.geometry.coordinates;
-          const toCoords = locB.geometry.coordinates;
-
-          // Find route based on transportation mode
-          if ( mode === "air") {
-            [distance, emission, time, geometry] = findAirRoute(fromCoords, toCoords);
-          } else if ( mode === "sea" ) {
-            [distance, emission, time, geometry] = findSeaRoute(fromCoords, toCoords);
-          } else if ( mode === "truck" ) {
-            try {
-              [distance, emission, time, geometry] = await findTruckRoute(fromCoords, toCoords, maxDistance = 5000);
-            } catch (error) {
-              console.log(`Unable to find ${mode} route between ${locA.properties.name} and ${locB.properties.name}:`, error.response.data.message);
-              continue;
-            }
-          } else if ( mode === "rail" ) {
-            // Check if locations are on the same rail network
-            if ( locA.properties.network === locB.properties.network ) {
-              [distance, emission, time, geometry] = findRailRoute(fromCoords, toCoords);
-            } else {
-              continue;
-            }
-            
-          } else {
-            console.log("Transportation mode not recognized:", mode);
-            continue;
-          }
-
-          // Check if route was found
-          if ( !distance || !emission || !time || !geometry ) {
-            console.log(`Unable to find ${mode} route between ${locA.properties.name} and ${locB.properties.name}`);
-            continue;
-          }
-  
-          // Add bidirectional edges
+      try {
+        const [distance, emission, time, geometry] = await findTruckRoute(fromCoords, toCoords, maxDistance = 5000);
+        if (distance && emission && time && geometry) {
           graph[locA.properties.name].edges.push({
             node: locB.properties.name,
-            transport: mode,
+            transport: "truck",
             distance: distance,
             emission: emission,
             time: time,
@@ -89,17 +160,18 @@ const buildGraph = async (geojson = GEOJSON) => {
 
           graph[locB.properties.name].edges.push({
             node: locA.properties.name,
-            transport: mode,
+            transport: "truck",
             distance: distance,
             emission: emission,
             time: time,
             geometry: geometry
           });
-          
-          // Keep track of processed edges
-          processedEdges[mode]++;
+
+          processedEdges.truck++;
           console.log(processedEdges);
-        };
+        }
+      } catch (error) {
+        console.log(`Unable to find truck route between ${locA.properties.name} and ${locB.properties.name}:`, error.response.data.message);
       }
     }
   }

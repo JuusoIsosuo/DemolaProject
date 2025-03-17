@@ -1,0 +1,115 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Rio Grande",
+        "country": "Brazil"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-52.1, -32.0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Buenos Aires",
+        "country": "Argentina"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-58.4, -34.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Hamburg",
+        "country": "Germany"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [10.0, 53.5]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Singapore",
+        "country": "Singapore"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [103.8, 1.3]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Sydney",
+        "country": "Australia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [151.2, -33.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Durban",
+        "country": "South Africa"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [31.0, -29.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Los Angeles",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-118.3, 33.7]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Shanghai",
+        "country": "China"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [121.5, 31.2]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Vancouver",
+        "country": "Canada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-123.1, 49.3]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Cape Town",
+        "country": "South Africa"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [18.4, -33.9]
+      }
+    }
+  ]
+}

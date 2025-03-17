@@ -1,6 +1,7 @@
 const { spawn, spawnSync } = require('child_process');
 const axios = require("axios");
 const dotenv = require("dotenv");
+const turf = require("@turf/turf");
 dotenv.config();
 
 const MAPBOX_API_TOKEN = process.env.MAPBOX_API_TOKEN;
@@ -16,19 +17,23 @@ const haversineDistance = ([lon1, lat1], [lon2, lat2]) => {
   return 2 * R * Math.asin(Math.sqrt(a));
 };
 
-// !!! Not implemented !!!
+
 const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
   const emission_per_ton_km = 284;
   const totalLoad = 140;
   const speed_km_h = 800;
 
+  const originCoords = [lon1, lat1];
+  const destinationCoords = [lon2, lat2];
+
+  const airRoute = turf.greatCircle(originCoords, destinationCoords, { units: 'kilometers', npoints: 100 });
+
   const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
   const emission = (distance * emission_per_ton_km / totalLoad / 1000);
   console.log("A_Emission: ", emission);
   const time = distance / speed_km_h;
-  const geometry = {
-    type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
-  };
+
+  const geometry = airRoute.geometry;
 
   routeFound = true;
   if ( routeFound ) {
@@ -67,7 +72,7 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
   console.log("S_Emission: ", emission);
   const time = route.properties.duration_hours;
   const geometry = {
-    type: "LineString", coordinates: route.geometry.coordinates
+    type: "LineString", coordinates: [originCoords, ...route.geometry.coordinates, destinationCoords]
   };
 
   return [distance, emission, time, geometry];
@@ -96,14 +101,20 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
   const distance = route.distance / 1000;
   const emission = (distance * emission_per_ton_km / totalLoad / 1000);
   const time = route.duration / 60 / 60;
-  const geometry = route.geometry;
+  
+  originCoords = [lon1, lat1];
+  destinationCoords = [lon2, lat2];
+  
+  const geometry = {
+    type: "LineString", coordinates: [originCoords, ...route.geometry.coordinates, destinationCoords]
+  };
 
   return [distance, emission, time, geometry];
 };
 
 // !!! Not implemented !!!
 const findRailRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 65;
+  const emission_per_ton_km = 0.001;
   const speed_km_h = 100;
   const totalLoad = 1500;
 
