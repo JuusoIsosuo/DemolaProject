@@ -138,7 +138,7 @@ const Home = () => {
   const [destination, setDestination] = useState('');
   const [weight, setWeight] = useState('');
   const [weightUnit, setWeightUnit] = useState('kg');
-  const [routeType, setRouteType] = useState('fastest');
+  const [routeType, setRouteType] = useState('green');
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -196,18 +196,18 @@ const Home = () => {
           <RouteTypeSelect>
             <RouteTypeButton
               type="button"
-              active={routeType === 'fastest'}
-              onClick={() => setRouteType('fastest')}
-            >
-              Fastest Route
-            </RouteTypeButton>
-            <RouteTypeButton
-              type="button"
               active={routeType === 'green'}
               onClick={() => setRouteType('green')}
               isGreen={true}
             >
               Lowest Emission
+            </RouteTypeButton>
+            <RouteTypeButton
+              type="button"
+              active={routeType === 'fastest'}
+              onClick={() => setRouteType('fastest')}
+            >
+              Fastest Route
             </RouteTypeButton>
           </RouteTypeSelect>
           <Button type="submit">Calculate Route</Button>
