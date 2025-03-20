@@ -114,9 +114,9 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
 
 // !!! Not implemented !!!
 const findRailRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 0.001;
+  const emission_per_ton_km = 30;
   const speed_km_h = 100;
-  const totalLoad = 1500;
+  const totalLoad = 4400;
 
   const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
   const emission = (distance * emission_per_ton_km / totalLoad / 1000);
