@@ -1,6 +1,7 @@
 {
   "type": "FeatureCollection",
   "features": [
+    { "type": "Feature", "properties": { "name": "Tampere" }, "geometry": { "type": "Point", "coordinates": [23.7572, 61.4978] } },
     { "type": "Feature", "properties": { "name": "Shanghai" }, "geometry": { "type": "Point", "coordinates": [121.4737, 31.2304] } },
     { "type": "Feature", "properties": { "name": "Xi'an" }, "geometry": { "type": "Point", "coordinates": [108.9398, 34.343] } },
     { "type": "Feature", "properties": { "name": "Chengdu" }, "geometry": { "type": "Point", "coordinates": [104.0668, 30.5728] } },

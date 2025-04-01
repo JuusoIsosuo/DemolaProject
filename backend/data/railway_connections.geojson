@@ -1,6 +1,7 @@
 {
   "type": "FeatureCollection",
   "features": [
+      { "type": "Feature", "properties": { "route": ["Tampere", "Helsinki"] }, "geometry": { "type": "LineString", "coordinates": [[23.7572, 61.4978], [24.9384, 60.1695]] } },
       { "type": "Feature", "properties": { "route": ["Shanghai", "Xi'an"] }, "geometry": { "type": "LineString", "coordinates": [[121.4737, 31.2304], [108.9398, 34.343]] } },
       { "type": "Feature", "properties": { "route": ["Xi'an", "Chengdu"] }, "geometry": { "type": "LineString", "coordinates": [[108.9398, 34.343], [104.0668, 30.5728]] } },
       { "type": "Feature", "properties": { "route": ["Dostyk", "Yekaterinburg"] }, "geometry": { "type": "LineString", "coordinates": [[73.1000, 49.7833], [58.5668, 51.2049]] } },

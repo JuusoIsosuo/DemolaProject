@@ -4,6 +4,17 @@
     {
       "type": "Feature",
       "properties": {
+        "name": "Helsinki-Vantaa Airport",
+        "country": "Finland"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [24.9633, 60.3172]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "name": "London Heathrow Airport",
         "country": "United Kingdom"
       },
