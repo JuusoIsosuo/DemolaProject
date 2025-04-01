@@ -5,17 +5,18 @@
       { "type": "Feature", "properties": { "route": ["Xi'an", "Chengdu"] }, "geometry": { "type": "LineString", "coordinates": [[108.9398, 34.343], [104.0668, 30.5728]] } },
       { "type": "Feature", "properties": { "route": ["Dostyk", "Yekaterinburg"] }, "geometry": { "type": "LineString", "coordinates": [[73.1000, 49.7833], [58.5668, 51.2049]] } },
       { "type": "Feature", "properties": { "route": ["Yekaterinburg", "Moscow"] }, "geometry": { "type": "LineString", "coordinates": [[58.5668, 51.2049], [37.6173, 55.7558]] } },
-      { "type": "Feature", "properties": { "route": ["Moscow", "Helsinki"] }, "geometry": { "type": "LineString", "coordinates": [[37.6173, 55.7558], [24.9354, 60.1695]] } },
       { "type": "Feature", "properties": { "route": ["Moscow", "Warsaw"] }, "geometry": { "type": "LineString", "coordinates": [[37.6173, 55.7558], [21.0122, 52.2298]] } },
       { "type": "Feature", "properties": { "route": ["Warsaw", "Paris"] }, "geometry": { "type": "LineString", "coordinates": [[21.0122, 52.2298], [2.3522, 48.8566]] } },
-      { "type": "Feature", "properties": { "route": ["Paris", "Madrid"] }, "geometry": { "type": "LineString", "coordinates": [[2.3522, 48.8566], [-3.7038, 40.4168]] } },
-      { "type": "Feature", "properties": { "route": ["Mumbai", "Tehran"] }, "geometry": { "type": "LineString", "coordinates": [[72.8777, 19.076], [51.389, 35.6892]] } },
+      { "type": "Feature", "properties": { "route": ["Paris", "Madrid"] }, "geometry": { "type": "LineString", "coordinates": [[2.3522, 48.8566], [1.4442, 43.6047], [-3.7038, 40.4168]] } },
+      { "type": "Feature", "properties": { "route": ["Mumbai", "Tehran"] }, "geometry": { "type": "LineString", "coordinates": [[72.8777, 19.076], [77.2090, 28.6139], [51.389, 35.6892]] } },
       { "type": "Feature", "properties": { "route": ["Tehran", "Istanbul"] }, "geometry": { "type": "LineString", "coordinates": [[51.389, 35.6892], [28.9784, 41.0082]] } },
-      { "type": "Feature", "properties": { "route": ["Istanbul", "Warsaw"] }, "geometry": { "type": "LineString", "coordinates": [[28.9784, 41.0082], [21.0122, 52.2298]] } },
+      { "type": "Feature", "properties": { "route": ["Istanbul", "Warsaw"] }, "geometry": { "type": "LineString", "coordinates": [[28.9784, 41.0082], [23.3242, 42.6977], [21.0122, 52.2298]] } },
       { "type": "Feature", "properties": { "route": ["Hong Kong", "Chengdu"] }, "geometry": { "type": "LineString", "coordinates": [[114.1694, 22.3193], [104.0668, 30.5728]] } },
       { "type": "Feature", "properties": { "route": ["Suifenhe", "Beijing"] }, "geometry": { "type": "LineString", "coordinates": [[129.6237, 44.5152], [116.4074, 39.9042]] } },
       { "type": "Feature", "properties": { "route": ["Beijing", "Dostyk"] }, "geometry": { "type": "LineString", "coordinates": [[116.4074, 39.9042], [73.1000, 49.7833]] } },
       { "type": "Feature", "properties": { "route": ["Chengdu", "Dostyk"] }, "geometry": { "type": "LineString", "coordinates": [[104.0668, 30.5728], [73.1000, 49.7833]] } },
-      { "type": "Feature", "properties": { "route": ["Moscow", "Chita"] }, "geometry": { "type": "LineString", "coordinates": [[37.6173, 55.7558], [113.5009, 52.0523]] } }
+      { "type": "Feature", "properties": { "route": ["Moscow", "Chita"] }, "geometry": { "type": "LineString", "coordinates": [[37.6173, 55.7558], [113.5009, 52.0523]] } },
+      { "type": "Feature", "properties": { "route": ["Tampere", "Helsinki"] }, "geometry": { "type": "LineString", "coordinates": [[23.7609, 61.4978], [24.9354, 60.1695]] } },
+      { "type": "Feature", "properties": { "route": ["Tallinn", "Moscow"] }, "geometry": { "type": "LineString", "coordinates": [[24.7536, 59.4370], [28.1871, 59.3772], [30.3141, 59.9311], [37.6173, 55.7558]] } }
   ]
 }

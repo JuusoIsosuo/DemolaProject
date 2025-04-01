@@ -110,10 +110,9 @@ const buildGraph = async () => {
   for (let i = 0; i < railway_connections.length; i++) {
     const connection = railway_connections[i];
     const [fromName, toName] = connection.properties.route;
-    const fromCoords = connection.geometry.coordinates[0];
-    const toCoords = connection.geometry.coordinates[connection.geometry.coordinates.length - 1];
+    
 
-    const [distance, emission, time, geometry] = findRailRoute(fromCoords, toCoords);
+    const [distance, emission, time, geometry] = findRailRoute(connection.geometry.coordinates);
     if (distance && emission && time && geometry) {
       graph[fromName].edges.push({
         node: toName,
