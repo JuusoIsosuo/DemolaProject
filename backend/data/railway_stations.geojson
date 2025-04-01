@@ -19,7 +19,8 @@
     { "type": "Feature", "properties": { "name": "Hong Kong" }, "geometry": { "type": "Point", "coordinates": [114.1694, 22.3193] } },
     { "type": "Feature", "properties": { "name": "Beijing" }, "geometry": { "type": "Point", "coordinates": [116.4074, 39.9042] } },
     { "type": "Feature", "properties": { "name": "Tehran" }, "geometry": { "type": "Point", "coordinates": [51.389, 35.6892] } },
-    { "type": "Feature", "properties": { "name": "Mumbai" }, "geometry": { "type": "Point", "coordinates": [72.8777, 19.076] } }
-
+    { "type": "Feature", "properties": { "name": "Mumbai" }, "geometry": { "type": "Point", "coordinates": [72.8777, 19.076] } },
+    { "type": "Feature", "properties": { "name": "Tallinn" }, "geometry": { "type": "Point", "coordinates": [24.7536, 59.4370] } },
+    { "type": "Feature", "properties": { "name": "Tampere" }, "geometry": { "type": "Point", "coordinates": [23.7606, 61.4978] } }
   ]
 }
