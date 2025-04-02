@@ -3,6 +3,9 @@ import styled from '@emotion/styled';
 import Map from '../components/Map';
 import axios from 'axios';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PulseLoader } from "react-spinners";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Container = styled.div`
   display: flex;
@@ -106,6 +109,27 @@ const AddButton = styled.button`
   cursor: pointer;
   font-size: 0.875rem;
   transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+
+  &:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+  }
+`;
+
+const DownloadButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  margin-left: auto;
 
   &:hover {
     background-color: #1d4ed8;
@@ -273,6 +297,13 @@ const MultipleRoutes = () => {
     return null;
   };
 
+  const capitalizeString = (str) => {
+    return str
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())  // Capitalize first letter of each word
+    .join(' ');
+  }
+
   const handleAddRoute = async () => {
     if (!origin || !destination || !weight) return;
     
@@ -315,8 +346,8 @@ const MultipleRoutes = () => {
       
       const newRoute = {
         id: Date.now().toString(),  // Add unique ID for each route
-        origin,
-        destination,
+        origin: capitalizeString(origin),
+        destination: capitalizeString(destination),
         weight: `${weight}${weightUnit}`,
         routeData: response.data,
         cost: totalCost
@@ -348,6 +379,32 @@ const MultipleRoutes = () => {
     if (routes.length <= 1) {
       setRouteData(null);
     }
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    const headers = [["Origin", "Destination", "Weight", "CO2 (kg)", "Cost (€)"]];
+
+    // Extract the values for the table rows
+    const rows = routes.map(route => [
+      route.origin,
+      route.destination,
+      route.weight,
+      parseFloat(route.routeData?.lowestEmission?.totalEmission).toFixed(2),
+      parseFloat(route.cost).toFixed(2)
+    ]);
+  
+    // Generate the table
+    autoTable(doc, {
+      head: headers,
+      body: rows,
+      startY: 10,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [37, 99, 235] },
+    });
+  
+    // Save the PDF
+    doc.save("route_data.pdf");
   };
 
   const handleRouteToggle = (routeId) => {
@@ -529,8 +586,14 @@ const MultipleRoutes = () => {
                 onClick={handleAddRoute}
                 disabled={isLoading || !origin || !destination || !weight}
               >
-                {isLoading ? 'Adding...' : 'Add Route'}
+                {isLoading ? <PulseLoader color="white" size={8} speedMultiplier={0.75}/> : 'Add Route'}
               </AddButton>
+              <DownloadButton 
+                onClick={handleDownloadPDF}
+                disabled={isLoading || !routes || routes.length === 0}
+              >
+                Download PDF
+              </DownloadButton>
             </SearchContainer>
             <RouteList>
               {routes.map((route, index) => (
@@ -671,8 +734,14 @@ const MultipleRoutes = () => {
                 onClick={handleAddRoute}
                 disabled={isLoading || !origin || !destination || !weight}
               >
-                {isLoading ? 'Adding...' : 'Add Route'}
+                {isLoading ? <PulseLoader color="white" size={8} speedMultiplier={0.75}/> : 'Add Route'}
               </AddButton>
+              <DownloadButton 
+                onClick={handleDownloadPDF}
+                disabled={isLoading || !routes || routes.length === 0}
+              >
+                Download PDF
+              </DownloadButton>
             </SearchContainer>
           </RouteListContainer>
 
