@@ -357,8 +357,8 @@ const MultipleRoutes = () => {
       
       const newRoute = {
         id: Date.now().toString(),  // Add unique ID for each route
-        origin: capitalizeString(origin),
-        destination: capitalizeString(destination),
+        origin: capitalizeString(origin).trim(),
+        destination: capitalizeString(destination).trim(),
         weight: `${weight}${weightUnit}`,
         routeData: response.data,
         cost: totalCost
@@ -399,6 +399,11 @@ const MultipleRoutes = () => {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "normal");
+    doc.text("Routes Summary Report", 15, 10);
+
     const headers = [["Origin", "Destination", "Weight", "CO2 (kg)", "Cost (€)"]];
 
     // Extract the values for the table rows
@@ -409,18 +414,32 @@ const MultipleRoutes = () => {
       parseFloat(route.routeData?.lowestEmission?.totalEmission).toFixed(2),
       parseFloat(route.cost).toFixed(2)
     ]);
+
+    rows.push([
+      "Total",
+      "",
+      "",
+      totals.emissions.toFixed(2),
+      totals.cost.toFixed(2)
+    ]);
   
     // Generate the table
     autoTable(doc, {
       head: headers,
       body: rows,
-      startY: 10,
+      startY: 20,
       styles: { fontSize: 10 },
-      headStyles: { fillColor: [37, 99, 235] },
+      headStyles: { fillColor: [20, 71, 230] },
+
+      willDrawCell: (data) => {
+        if (data.row.index === rows.length - 1) {
+          doc.setFont("helvetica", "bold");
+          doc.setFillColor(190, 219, 255);
+        }
+      }
     });
-  
-    // Save the PDF
-    doc.save("route_data.pdf");
+    
+    doc.save("routes_summary.pdf");
   };
 
   const handleRouteToggle = (routeId) => {
