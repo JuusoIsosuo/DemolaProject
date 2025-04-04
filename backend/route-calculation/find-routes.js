@@ -79,8 +79,8 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
 };
 
 const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
-  const emission_per_ton_km = 105;
-  const totalLoad = 35;
+  const emission_per_ton_km = 30;
+  const totalLoad = 25;
   // Don't bother caculating very long routes
   if (haversineDistance([lon1, lat1], [lon2, lat2]) > maxDistance) {
     console.log("   vvv Route too long vvv");
@@ -115,8 +115,8 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
 // !!! Not implemented !!!
 const findRailRoute = (coordinates) => {
   const emission_per_ton_km = 0.001;
-  const speed_km_h = 100;
-  const totalLoad = 4400;
+  const speed_km_h = 40;
+  const totalLoad = 2000;
 
   let totalDistance = 0;
 

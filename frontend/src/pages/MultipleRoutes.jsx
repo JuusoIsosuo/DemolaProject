@@ -327,10 +327,10 @@ const MultipleRoutes = () => {
       
       // Cost per tonne-kilometer for each transport mode (estimated values)
       const costPerTonneKm = {
-        truck: 0.12,  // €/tonne-km
-        rail: 0.05,   // €/tonne-km
-        ship: 0.02,   // €/tonne-km
-        air: 0.80     // €/tonne-km
+        truck: 0.115,  // €/tonne-km
+        rail: 0.017,   // €/tonne-km
+        sea: 0.0013,   // €/tonne-km
+        air: 0.18     // €/tonne-km
       };
 
       response.data.lowestEmission.geojson.features.forEach(feature => {
@@ -342,19 +342,35 @@ const MultipleRoutes = () => {
         const segmentCost = distanceKm * weightInTonnes * costRate;
         totalCost += segmentCost;
 
-        console.log(`Segment: ${transport}, Distance: ${distanceKm}km, Weight: ${weightInTonnes}t, Rate: ${costRate}€/t-km, Cost: ${segmentCost}€`);
+        console.log(`Segment cost calculation:`, {
+          transport,
+          distanceKm,
+          weightInTonnes,
+          costRate,
+          segmentCost
+        });
+      });
+
+      console.log(`Total cost calculation:`, {
+        weightInTonnes,
+        totalCost
       });
       
       const newRoute = {
         id: Date.now().toString(),  // Add unique ID for each route
-        origin: capitalizeString(origin),
-        destination: capitalizeString(destination),
+        origin: capitalizeString(origin).trim(),
+        destination: capitalizeString(destination).trim(),
         weight: `${weight}${weightUnit}`,
         routeData: response.data,
         cost: totalCost
       };
 
-      console.log(`Total cost for route: ${totalCost}€`);
+      console.log(`Final route data:`, {
+        route: `${origin} to ${destination}`,
+        weight: `${weight}${weightUnit}`,
+        weightInTonnes,
+        totalCost
+      });
       
       setRoutes([...routes, newRoute]);
       setSelectedRoutes(prev => new Set([...prev, newRoute.id]));  // Select new route by default
@@ -384,6 +400,11 @@ const MultipleRoutes = () => {
 
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "normal");
+    doc.text("Routes Summary Report", 15, 10);
+
     const headers = [["Origin", "Destination", "Weight", "CO2 (kg)", "Cost (€)"]];
 
     // Extract the values for the table rows
@@ -394,18 +415,32 @@ const MultipleRoutes = () => {
       parseFloat(route.routeData?.lowestEmission?.totalEmission).toFixed(2),
       parseFloat(route.cost).toFixed(2)
     ]);
+
+    rows.push([
+      "Total",
+      "",
+      "",
+      totals.emissions.toFixed(2),
+      totals.cost.toFixed(2)
+    ]);
   
     // Generate the table
     autoTable(doc, {
       head: headers,
       body: rows,
-      startY: 10,
+      startY: 20,
       styles: { fontSize: 10 },
-      headStyles: { fillColor: [37, 99, 235] },
+      headStyles: { fillColor: [20, 71, 230] },
+
+      willDrawCell: (data) => {
+        if (data.row.index === rows.length - 1) {
+          doc.setFont("helvetica", "bold");
+          doc.setFillColor(190, 219, 255);
+        }
+      }
     });
-  
-    // Save the PDF
-    doc.save("route_data.pdf");
+    
+    doc.save("routes_summary.pdf");
   };
 
   const handleRouteToggle = (routeId) => {
@@ -433,14 +468,24 @@ const MultipleRoutes = () => {
   const totals = routes
     .filter(route => selectedRoutes.has(route.id))
     .reduce((sum, route) => {
-      const emission = route.routeData?.lowestEmission?.totalEmission || 0;
-      console.log('Route emissions:', {
+      // Convert weight to kg
+      const weightInKg = route.weight.includes('kg') 
+        ? parseFloat(route.weight)
+        : parseFloat(route.weight) * 1000; // Convert tonnes to kg
+      
+      // Get emission per kg and multiply by weight in kg
+      const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+      const totalEmission = emissionPerKg * weightInKg;
+      
+      console.log('Route emissions calculation:', {
         route: `${route.origin} to ${route.destination}`,
-        emission,
-        fullRouteData: route.routeData
+        weightInKg,
+        emissionPerKg,
+        totalEmission
       });
+      
       return {
-        emissions: sum.emissions + emission,
+        emissions: sum.emissions + totalEmission,
         cost: sum.cost + (route.cost || 0)
       };
     }, { emissions: 0, cost: 0 });
@@ -451,15 +496,25 @@ const MultipleRoutes = () => {
   const emissionsChartData = routes
     .filter(route => selectedRoutes.has(route.id))
     .map(route => {
-      const emission = route.routeData?.lowestEmission?.totalEmission || 0;
+      // Convert weight to kg
+      const weightInKg = route.weight.includes('kg') 
+        ? parseFloat(route.weight)
+        : parseFloat(route.weight) * 1000; // Convert tonnes to kg
+      
+      // Get emission per kg and multiply by weight in kg
+      const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+      const totalEmission = emissionPerKg * weightInKg;
+      
       console.log('Chart data route:', {
         name: `${route.origin} to ${route.destination}`,
-        emission,
-        fullRouteData: route.routeData
+        weightInKg,
+        emissionPerKg,
+        totalEmission
       });
+      
       return {
         name: `${route.origin} to ${route.destination}`,
-        value: emission
+        value: totalEmission
       };
     })
     .filter(item => item.value > 0);
@@ -771,19 +826,29 @@ const MultipleRoutes = () => {
                 <span>Actions</span>
               </div>
               {sortedRoutes.map((route) => {
-                const emission = route.routeData?.lowestEmission?.totalEmission || 0;
+                // Convert weight to kg
+                const weightInKg = route.weight.includes('kg') 
+                  ? parseFloat(route.weight)
+                  : parseFloat(route.weight) * 1000; // Convert tonnes to kg
+                
+                // Get emission per kg and multiply by weight in kg
+                const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+                const totalEmission = emissionPerKg * weightInKg;
+                
                 console.log('Route details row:', {
                   route: `${route.origin} to ${route.destination}`,
-                  emission,
-                  fullRouteData: route.routeData
+                  weightInKg,
+                  emissionPerKg,
+                  totalEmission
                 });
+                
                 return (
                   <React.Fragment key={route.id}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       {`${route.origin} to ${route.destination}`}
                     </div>
                     <div>{route.weight}</div>
-                    <div>{emission.toFixed(2)}</div>
+                    <div>{totalEmission.toFixed(2)}</div>
                     <div>{(route.cost || 0).toFixed(2)}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <input
