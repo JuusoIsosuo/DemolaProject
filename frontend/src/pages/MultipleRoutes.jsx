@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { PulseLoader } from "react-spinners";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import RouteLegend from '../components/RouteLegend';
 
 const Container = styled.div`
   display: flex;
@@ -552,6 +553,7 @@ const MultipleRoutes = () => {
 
       {activeTab === 'kartta' ? (
         <ContentContainer>
+          <RouteLegend />
           <MapContainer>
             <Map routeData={routeData} />
           </MapContainer>
