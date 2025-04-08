@@ -1,18 +1,17 @@
-const { Sequelize } = require('sequelize');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not defined in environment variables');
 }
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  }
-});
+if (!process.env.DATABASE_KEY) {
+  throw new Error('DATABASE_KEY is not defined in environment variables');
+}
 
-module.exports = sequelize; 
+// Create Supabase client
+const supabaseUrl = process.env.DATABASE_URL;
+const supabaseKey = process.env.DATABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+module.exports = supabase; 

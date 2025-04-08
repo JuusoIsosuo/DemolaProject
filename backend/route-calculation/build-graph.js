@@ -1,9 +1,7 @@
 const fs = require("fs");
 const path = require('path');
 const { findAirRoute, findSeaRoute, findTruckRoute, findRailRoute } = require('./find-routes.js');
-const sequelize = require('./config/database');
-const Location = require('./models/Location');
-const Connection = require('./models/Connection');
+const supabase = require('./config/database');
 
 // Load the GeoJSON files
 const AIRPORTS = JSON.parse(fs.readFileSync('./data/airports.geojson', 'utf8'));
@@ -22,8 +20,17 @@ const processedEdges = {
 // Convert GeoJSON to graph representation
 const buildGraph = async () => {
   try {
-    // Sync database tables
-    await sequelize.sync({ force: true }); // This will drop existing tables and recreate them
+    // Test connection to Supabase
+    const { data, error } = await supabase.from('locations').select('count');
+    if (error) {
+      console.error('Unable to connect to the database:', error);
+      throw error;
+    }
+    console.log('Connection has been established successfully.');
+
+    // Clear existing data
+    await supabase.from('connections').delete().neq('id', 0);
+    await supabase.from('locations').delete().neq('id', 0);
 
     const airport_locations = AIRPORTS.features;
     const port_locations = PORTS.features;
@@ -34,13 +41,39 @@ const buildGraph = async () => {
     // Create all locations first
     const locationMap = new Map();
     for (const location of locations) {
-      const [dbLocation] = await Location.findOrCreate({
-        where: { name: location.properties.name },
-        defaults: {
-          coordinates: location.geometry.coordinates
+      // Check if location already exists
+      const { data: existingLocations, error: searchError } = await supabase
+        .from('locations')
+        .select('id')
+        .eq('name', location.properties.name);
+      
+      if (searchError) {
+        console.error(`Error searching for location ${location.properties.name}:`, searchError);
+        continue;
+      }
+
+      let locationId;
+      if (existingLocations && existingLocations.length > 0) {
+        locationId = existingLocations[0].id;
+      } else {
+        // Insert new location
+        const { data: newLocation, error: insertError } = await supabase
+          .from('locations')
+          .insert([{ 
+            name: location.properties.name, 
+            coordinates: location.geometry.coordinates 
+          }])
+          .select('id');
+        
+        if (insertError) {
+          console.error(`Error inserting location ${location.properties.name}:`, insertError);
+          continue;
         }
-      });
-      locationMap.set(location.properties.name, dbLocation);
+        
+        locationId = newLocation[0].id;
+      }
+      
+      locationMap.set(location.properties.name, { id: locationId });
     }
 
     // Generate edges between airport locations
@@ -53,18 +86,24 @@ const buildGraph = async () => {
 
         const [distance, emission, time, geometry] = findAirRoute(fromCoords, toCoords);
         if (distance && emission && time && geometry) {
-          await Connection.create({
-            fromLocationId: locationMap.get(locA.properties.name).id,
-            toLocationId: locationMap.get(locB.properties.name).id,
-            transport: 'air',
-            distance,
-            emission,
-            time,
-            geometry
-          });
-
-          processedEdges.air++;
-          console.log(processedEdges);
+          const { error } = await supabase
+            .from('connections')
+            .insert([{
+              from_location_id: locationMap.get(locA.properties.name).id,
+              to_location_id: locationMap.get(locB.properties.name).id,
+              transport: 'air',
+              distance,
+              emission,
+              time,
+              geometry
+            }]);
+          
+          if (error) {
+            console.error(`Error creating air connection between ${locA.properties.name} and ${locB.properties.name}:`, error);
+          } else {
+            processedEdges.air++;
+            console.log(processedEdges);
+          }
         }
       }
     }
@@ -79,18 +118,24 @@ const buildGraph = async () => {
 
         const [distance, emission, time, geometry] = findSeaRoute(fromCoords, toCoords);
         if (distance && emission && time && geometry) {
-          await Connection.create({
-            fromLocationId: locationMap.get(locA.properties.name).id,
-            toLocationId: locationMap.get(locB.properties.name).id,
-            transport: 'sea',
-            distance,
-            emission,
-            time,
-            geometry
-          });
-
-          processedEdges.sea++;
-          console.log(processedEdges);
+          const { error } = await supabase
+            .from('connections')
+            .insert([{
+              from_location_id: locationMap.get(locA.properties.name).id,
+              to_location_id: locationMap.get(locB.properties.name).id,
+              transport: 'sea',
+              distance,
+              emission,
+              time,
+              geometry
+            }]);
+          
+          if (error) {
+            console.error(`Error creating sea connection between ${locA.properties.name} and ${locB.properties.name}:`, error);
+          } else {
+            processedEdges.sea++;
+            console.log(processedEdges);
+          }
         }
       }
     }
@@ -104,18 +149,24 @@ const buildGraph = async () => {
 
       const [distance, emission, time, geometry] = findRailRoute(fromCoords, toCoords);
       if (distance && emission && time && geometry) {
-        await Connection.create({
-          fromLocationId: locationMap.get(fromName).id,
-          toLocationId: locationMap.get(toName).id,
-          transport: 'rail',
-          distance,
-          emission,
-          time,
-          geometry
-        });
-
-        processedEdges.rail++;
-        console.log(processedEdges);
+        const { error } = await supabase
+          .from('connections')
+          .insert([{
+            from_location_id: locationMap.get(fromName).id,
+            to_location_id: locationMap.get(toName).id,
+            transport: 'rail',
+            distance,
+            emission,
+            time,
+            geometry
+          }]);
+        
+        if (error) {
+          console.error(`Error creating rail connection between ${fromName} and ${toName}:`, error);
+        } else {
+          processedEdges.rail++;
+          console.log(processedEdges);
+        }
       }
     }
 
@@ -130,18 +181,24 @@ const buildGraph = async () => {
         try {
           const [distance, emission, time, geometry] = await findTruckRoute(fromCoords, toCoords, maxDistance = 5000);
           if (distance && emission && time && geometry) {
-            await Connection.create({
-              fromLocationId: locationMap.get(locA.properties.name).id,
-              toLocationId: locationMap.get(locB.properties.name).id,
-              transport: 'truck',
-              distance,
-              emission,
-              time,
-              geometry
-            });
-
-            processedEdges.truck++;
-            console.log(processedEdges);
+            const { error } = await supabase
+              .from('connections')
+              .insert([{
+                from_location_id: locationMap.get(locA.properties.name).id,
+                to_location_id: locationMap.get(locB.properties.name).id,
+                transport: 'truck',
+                distance,
+                emission,
+                time,
+                geometry
+              }]);
+            
+            if (error) {
+              console.error(`Error creating truck connection between ${locA.properties.name} and ${locB.properties.name}:`, error);
+            } else {
+              processedEdges.truck++;
+              console.log(processedEdges);
+            }
           }
         } catch (error) {
           console.log(`Unable to find truck route between ${locA.properties.name} and ${locB.properties.name}:`, error.response?.data?.message || error.message);
