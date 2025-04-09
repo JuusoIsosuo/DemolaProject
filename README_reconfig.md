@@ -25,7 +25,6 @@ MultipleRoutes
         - routes
         - selectedRoutes
         - setSelectedRoutes
-        - onDeleteRoute
  ```
  
 ## Component Details
@@ -58,7 +57,7 @@ MultipleRoutes
 ### **RouteDetails Component**
 - Displays all routes
 - Can update selected routes via `setSelectedRoutes`
-- Can delete routes via `onDeleteRoute` callback
+- Handles deleting routes
 - Manages its own sorting state internally
 
 ---
