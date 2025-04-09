@@ -223,7 +223,7 @@ const RouteDetailsTitle = styled.div`
 
 const RouteDetailsTable = styled.div`
   display: grid;
-  grid-template-columns: 1.5fr 0.8fr 1fr 0.8fr 0.5fr;
+  grid-template-columns: 1.5fr 0.8fr 1fr 0.8fr 0.8fr 0.8fr 0.5fr;
   gap: 0.5rem;
   
   > div {
@@ -236,7 +236,7 @@ const RouteDetailsTable = styled.div`
     text-overflow: ellipsis;
   }
 
-  > div:nth-of-type(-n+5) {
+  > div:nth-of-type(-n+7) {
     font-weight: 500;
     color: #1e293b;
     cursor: pointer;
@@ -261,6 +261,67 @@ const ChartsContainer = styled.div`
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
   margin-bottom: 1rem;
+`;
+
+const ChartWrapper = styled.div`
+  display: flex;
+  gap: 1rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+`;
+
+const ChartDataList = styled.div`
+  flex: 1;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 1rem;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+`;
+
+const ChartDataItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+  color: #64748b;
+  position: relative;
+  padding-left: 1.5rem;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background-color: ${props => props.color || '#8884d8'};
+  }
 `;
 
 // RouteDetails Component used in both views
@@ -289,8 +350,14 @@ const RouteDetails = ({
         <div onClick={() => handleSort('emissions')} style={{ cursor: 'pointer' }}>
           CO₂ (kg) {sortField === 'emissions' && (sortDirection === 'asc' ? '↑' : '↓')}
         </div>
+        <div onClick={() => handleSort('emissionsPerTonne')} style={{ cursor: 'pointer' }}>
+          CO₂/t {sortField === 'emissionsPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </div>
         <div onClick={() => handleSort('cost')} style={{ cursor: 'pointer' }}>
           € {sortField === 'cost' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </div>
+        <div onClick={() => handleSort('costPerTonne')} style={{ cursor: 'pointer' }}>
+          €/t {sortField === 'costPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'default' }}>
           <input
@@ -304,8 +371,13 @@ const RouteDetails = ({
           const weightInKg = route.weight.includes('kg')
             ? parseFloat(route.weight)
             : parseFloat(route.weight) * 1000;
+          const weightInTonnes = route.weight.includes('kg')
+            ? parseFloat(route.weight) / 1000
+            : parseFloat(route.weight);
           const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
           const totalEmission = emissionPerKg * weightInKg;
+          const emissionPerTonne = totalEmission / weightInTonnes;
+          const costPerTonne = (route.cost || 0) / weightInTonnes;
           
           return (
             <React.Fragment key={route.id}>
@@ -314,7 +386,9 @@ const RouteDetails = ({
               </div>
               <div>{route.weight}</div>
               <div>{totalEmission.toFixed(2)}</div>
+              <div>{emissionPerTonne.toFixed(2)}</div>
               <div>{(route.cost || 0).toFixed(2)}</div>
+              <div>{costPerTonne.toFixed(2)}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input
                   type="checkbox"
@@ -575,25 +649,26 @@ const MultipleRoutes = () => {
   const emissionsChartData = routes
     .filter(route => selectedRoutes.has(route.id))
     .map(route => {
-      // Convert weight to kg
-      const weightInKg = route.weight.includes('kg') 
-        ? parseFloat(route.weight)
-        : parseFloat(route.weight) * 1000; // Convert tonnes to kg
+      // Convert weight to tonnes
+      const weightInTonnes = route.weight.includes('kg') 
+        ? parseFloat(route.weight) / 1000 
+        : parseFloat(route.weight);
       
       // Get emission per kg and multiply by weight in kg
       const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
-      const totalEmission = emissionPerKg * weightInKg;
+      const totalEmission = emissionPerKg * (weightInTonnes * 1000); // Convert tonnes to kg for calculation
+      const emissionPerTonne = totalEmission / weightInTonnes;
       
-      console.log('Chart data route:', {
-        name: `${route.origin} to ${route.destination}`,
-        weightInKg,
-        emissionPerKg,
-        totalEmission
+      console.log('Emissions per tonne calculation:', {
+        route: `${route.origin} to ${route.destination}`,
+        weightInTonnes,
+        totalEmission,
+        emissionPerTonne
       });
       
       return {
         name: `${route.origin} to ${route.destination}`,
-        value: totalEmission
+        value: emissionPerTonne
       };
     })
     .filter(item => item.value > 0);
@@ -638,11 +713,27 @@ const MultipleRoutes = () => {
     }
     
     if (sortField === 'emissions') {
-      aValue = a.routeData?.lowestEmission?.totalEmission || 0;
-      bValue = b.routeData?.lowestEmission?.totalEmission || 0;
+      const aWeightInKg = a.weight.includes('kg') ? parseFloat(a.weight) : parseFloat(a.weight) * 1000;
+      const bWeightInKg = b.weight.includes('kg') ? parseFloat(b.weight) : parseFloat(b.weight) * 1000;
+      const aEmissionPerKg = a.routeData?.lowestEmission?.totalEmission || 0;
+      const bEmissionPerKg = b.routeData?.lowestEmission?.totalEmission || 0;
+      aValue = aEmissionPerKg * aWeightInKg;
+      bValue = bEmissionPerKg * bWeightInKg;
+    } else if (sortField === 'emissionsPerTonne') {
+      const aWeightInTonnes = a.weight.includes('kg') ? parseFloat(a.weight) / 1000 : parseFloat(a.weight);
+      const bWeightInTonnes = b.weight.includes('kg') ? parseFloat(b.weight) / 1000 : parseFloat(b.weight);
+      const aEmissionPerKg = a.routeData?.lowestEmission?.totalEmission || 0;
+      const bEmissionPerKg = b.routeData?.lowestEmission?.totalEmission || 0;
+      aValue = (aEmissionPerKg * (aWeightInTonnes * 1000)) / aWeightInTonnes;
+      bValue = (bEmissionPerKg * (bWeightInTonnes * 1000)) / bWeightInTonnes;
     } else if (sortField === 'cost') {
       aValue = a.cost || 0;
       bValue = b.cost || 0;
+    } else if (sortField === 'costPerTonne') {
+      const aWeightInTonnes = a.weight.includes('kg') ? parseFloat(a.weight) / 1000 : parseFloat(a.weight);
+      const bWeightInTonnes = b.weight.includes('kg') ? parseFloat(b.weight) / 1000 : parseFloat(b.weight);
+      aValue = (a.cost || 0) / aWeightInTonnes;
+      bValue = (b.cost || 0) / bWeightInTonnes;
     } else if (sortField === 'weight') {
       const getWeightInTonnes = (route) => {
         const weight = parseFloat(route.weight);
@@ -680,13 +771,13 @@ const MultipleRoutes = () => {
             active={activeTab === 'kartta'} 
             onClick={() => setActiveTab('kartta')}
           >
-            Kartta
+            Map
           </Tab>
           <Tab 
             active={activeTab === 'tilastot'} 
             onClick={() => setActiveTab('tilastot')}
           >
-            Tilastot
+            Statistics
           </Tab>
         </TabContainer>
 
@@ -762,73 +853,97 @@ const MultipleRoutes = () => {
           </StatsContainer>
 
           <ChartsContainer>
-            <ChartContainer>
-              <ChartTitle>Emissions Distribution</ChartTitle>
-              {emissionsChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={emissionsChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: ${value.toFixed(2)} kg CO₂`}
-                    >
-                      {emissionsChartData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => `${value.toFixed(2)} kg CO₂`}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyChartMessage>
-                  Add routes to see emissions distribution
-                </EmptyChartMessage>
-              )}
-            </ChartContainer>
+            <ChartWrapper>
+              <div style={{ flex: 2 }}>
+                <ChartTitle>Emissions per Tonne Distribution</ChartTitle>
+                {emissionsChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={emissionsChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {emissionsChartData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value) => `${value.toFixed(2)} kg CO₂/t`}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <EmptyChartMessage>
+                    Add routes to see emissions per tonne distribution
+                  </EmptyChartMessage>
+                )}
+              </div>
+              <ChartDataList>
+                {emissionsChartData.map((entry, index) => (
+                  <ChartDataItem 
+                    key={index}
+                    color={COLORS[index % COLORS.length]}
+                  >
+                    <span>{entry.name}</span>
+                    <span>{entry.value.toFixed(2)} kg CO₂/t</span>
+                  </ChartDataItem>
+                ))}
+              </ChartDataList>
+            </ChartWrapper>
 
-            <ChartContainer>
-              <ChartTitle>Cost per Tonne Distribution</ChartTitle>
-              {costChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={costChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: €${value.toFixed(2)}/t`}
-                    >
-                      {costChartData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => `€${value.toFixed(2)}/t`}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyChartMessage>
-                  Add routes to see cost per tonne distribution
-                </EmptyChartMessage>
-              )}
-            </ChartContainer>
+            <ChartWrapper>
+              <div style={{ flex: 2 }}>
+                <ChartTitle>Cost per Tonne Distribution</ChartTitle>
+                {costChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={costChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {costChartData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value) => `€${value.toFixed(2)}/t`}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <EmptyChartMessage>
+                    Add routes to see cost per tonne distribution
+                  </EmptyChartMessage>
+                )}
+              </div>
+              <ChartDataList>
+                {costChartData.map((entry, index) => (
+                  <ChartDataItem 
+                    key={index}
+                    color={COLORS[index % COLORS.length]}
+                  >
+                    <span>{entry.name}</span>
+                    <span>€{entry.value.toFixed(2)}/t</span>
+                  </ChartDataItem>
+                ))}
+              </ChartDataList>
+            </ChartWrapper>
           </ChartsContainer>
 
           <SearchContainer>
