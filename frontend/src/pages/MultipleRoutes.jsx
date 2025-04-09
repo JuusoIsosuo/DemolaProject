@@ -54,11 +54,6 @@ const MapContainer = styled.div`
   overflow: hidden;
 `;
 
-const RouteListContainer = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-`;
 
 const SearchContainer = styled.div`
   display: flex;
@@ -142,9 +137,6 @@ const DownloadButton = styled.button`
   }
 `;
 
-const RouteList = styled.div`
-  padding: 1rem;
-`;
 
 const RouteItem = styled.div`
   display: grid;
@@ -271,6 +263,79 @@ const ChartsContainer = styled.div`
   margin-bottom: 1rem;
 `;
 
+// RouteDetails Component used in both views
+const RouteDetails = ({
+  sortedRoutes,
+  sortField,
+  sortDirection,
+  handleSort,
+  selectedRoutes,
+  routes,
+  handleSelectAll,
+  handleRouteToggle,
+  handleDeleteRoute,
+  ActionButton
+}) => {
+  return (
+    <RouteDetailsContainer>
+      <RouteDetailsTitle>Route Details</RouteDetailsTitle>
+      <RouteDetailsTable>
+        <div onClick={() => handleSort('route')} style={{ cursor: 'pointer' }}>
+          Route {sortField === 'route' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </div>
+        <div onClick={() => handleSort('weight')} style={{ cursor: 'pointer' }}>
+          Weight {sortField === 'weight' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </div>
+        <div onClick={() => handleSort('emissions')} style={{ cursor: 'pointer' }}>
+          CO₂ (kg) {sortField === 'emissions' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </div>
+        <div onClick={() => handleSort('cost')} style={{ cursor: 'pointer' }}>
+          € {sortField === 'cost' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'default' }}>
+          <input
+            type="checkbox"
+            checked={selectedRoutes.size === routes.length && routes.length > 0}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+          />
+          <span>Actions</span>
+        </div>
+        {sortedRoutes.map((route) => {
+          const weightInKg = route.weight.includes('kg')
+            ? parseFloat(route.weight)
+            : parseFloat(route.weight) * 1000;
+          const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+          const totalEmission = emissionPerKg * weightInKg;
+          
+          return (
+            <React.Fragment key={route.id}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                {`${route.origin} to ${route.destination}`}
+              </div>
+              <div>{route.weight}</div>
+              <div>{totalEmission.toFixed(2)}</div>
+              <div>{(route.cost || 0).toFixed(2)}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedRoutes.has(route.id)}
+                  onChange={() => handleRouteToggle(route.id)}
+                />
+                <ActionButton 
+                  title="Delete"
+                  onClick={() => handleDeleteRoute(route.id)}
+                >
+                  🗑️
+                </ActionButton>
+              </div>
+            </React.Fragment>
+          );
+        })}
+      </RouteDetailsTable>
+    </RouteDetailsContainer>
+  );
+};
+
 const MultipleRoutes = () => {
   const [activeTab, setActiveTab] = useState('kartta');
   const [routes, setRoutes] = useState([]);
@@ -300,10 +365,10 @@ const MultipleRoutes = () => {
 
   const capitalizeString = (str) => {
     return str
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())  // Capitalize first letter of each word
-    .join(' ');
-  }
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())  // Capitalize first letter of each word
+      .join(' ');
+  };
 
   const handleAddRoute = async () => {
     if (!origin || !destination || !weight) return;
@@ -321,7 +386,6 @@ const MultipleRoutes = () => {
         `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}`
       );
 
-      // Calculate total cost based on distance and transport type
       let totalCost = 0;
       const weightInTonnes = weightUnit === 'kg' ? parseFloat(weight) / 1000 : parseFloat(weight);
       
@@ -371,7 +435,7 @@ const MultipleRoutes = () => {
         weightInTonnes,
         totalCost
       });
-      
+
       setRoutes([...routes, newRoute]);
       setSelectedRoutes(prev => new Set([...prev, newRoute.id]));  // Select new route by default
       setOrigin('');
@@ -415,6 +479,21 @@ const MultipleRoutes = () => {
       parseFloat(route.routeData?.lowestEmission?.totalEmission).toFixed(2),
       parseFloat(route.cost).toFixed(2)
     ]);
+
+    // Example totals; adjust if needed
+    const totals = routes
+      .filter(route => selectedRoutes.has(route.id))
+      .reduce((sum, route) => {
+        const weightInKg = route.weight.includes('kg') 
+          ? parseFloat(route.weight)
+          : parseFloat(route.weight) * 1000;
+        const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+        const totalEmission = emissionPerKg * weightInKg;
+        return {
+          emissions: sum.emissions + totalEmission,
+          cost: sum.cost + (route.cost || 0)
+        };
+      }, { emissions: 0, cost: 0 });
 
     rows.push([
       "Total",
@@ -612,7 +691,6 @@ const MultipleRoutes = () => {
           <MapContainer>
             <Map routeData={routeData} />
           </MapContainer>
-          <RouteListContainer>
             <SearchContainer>
               <SearchInput
                 placeholder="Origin"
@@ -652,30 +730,18 @@ const MultipleRoutes = () => {
                 Download PDF
               </DownloadButton>
             </SearchContainer>
-            <RouteList>
-              {routes.map((route, index) => (
-                <RouteItem key={index}>
-                  <span>{route.origin}</span>
-                  <span>{route.destination}</span>
-                  <span>{route.weight}</span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <ActionButton 
-                      title="Show on map"
-                      onClick={() => setRouteData(route.routeData)}
-                    >
-                      🗺️
-                    </ActionButton>
-                    <ActionButton 
-                      title="Delete"
-                      onClick={() => handleDeleteRoute(route.id)}
-                    >
-                      🗑️
-                    </ActionButton>
-                  </div>
-                </RouteItem>
-              ))}
-            </RouteList>
-          </RouteListContainer>
+          <RouteDetails
+            sortedRoutes={sortedRoutes}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            handleSort={handleSort}
+            selectedRoutes={selectedRoutes}
+            routes={routes}
+            handleSelectAll={handleSelectAll}
+            handleRouteToggle={handleRouteToggle}
+            handleDeleteRoute={handleDeleteRoute}
+            ActionButton={ActionButton}
+          />
         </ContentContainer>
       ) : (
         <ContentContainer>
@@ -760,118 +826,61 @@ const MultipleRoutes = () => {
             </ChartContainer>
           </ChartsContainer>
 
-          <RouteListContainer>
-            <SearchContainer>
-              <SearchInput
-                placeholder="Origin"
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
+          <SearchContainer>
+            <SearchInput
+              placeholder="Origin"
+              value={origin}
+              onChange={(e) => setOrigin(e.target.value)}
+            />
+            <SearchInput
+              placeholder="Destination"
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+            />
+            <WeightContainer>
+              <WeightInput
+                type="number"
+                placeholder="Weight"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
               />
-              <SearchInput
-                placeholder="Destination"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-              />
-              <WeightContainer>
-                <WeightInput
-                  type="number"
-                  placeholder="Weight"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                />
-                <UnitSelect
-                  value={weightUnit}
-                  onChange={(e) => setWeightUnit(e.target.value)}
-                >
-                  <option value="t">t</option>
-                  <option value="kg">kg</option>
-                </UnitSelect>
-              </WeightContainer>
-              <AddButton 
-                onClick={handleAddRoute}
-                disabled={isLoading || !origin || !destination || !weight}
+              <UnitSelect
+                value={weightUnit}
+                onChange={(e) => setWeightUnit(e.target.value)}
               >
-                {isLoading ? <PulseLoader color="white" size={8} speedMultiplier={0.75}/> : 'Add Route'}
-              </AddButton>
-              <DownloadButton 
-                onClick={handleDownloadPDF}
-                disabled={isLoading || !routes || routes.length === 0}
-              >
-                Download PDF
-              </DownloadButton>
-            </SearchContainer>
-          </RouteListContainer>
-
-          <RouteDetailsContainer>
-            <RouteDetailsTitle>Route Details</RouteDetailsTitle>
-            <RouteDetailsTable>
-              <div onClick={() => handleSort('route')} style={{ cursor: 'pointer' }}>
-                Route {sortField === 'route' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </div>
-              <div onClick={() => handleSort('weight')} style={{ cursor: 'pointer' }}>
-                Weight {sortField === 'weight' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </div>
-              <div onClick={() => handleSort('emissions')} style={{ cursor: 'pointer' }}>
-                CO₂ (kg) {sortField === 'emissions' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </div>
-              <div onClick={() => handleSort('cost')} style={{ cursor: 'pointer' }}>
-                € {sortField === 'cost' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'default' }}>
-                <input
-                  type="checkbox"
-                  checked={selectedRoutes.size === routes.length && routes.length > 0}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-                <span>Actions</span>
-              </div>
-              {sortedRoutes.map((route) => {
-                // Convert weight to kg
-                const weightInKg = route.weight.includes('kg') 
-                  ? parseFloat(route.weight)
-                  : parseFloat(route.weight) * 1000; // Convert tonnes to kg
-                
-                // Get emission per kg and multiply by weight in kg
-                const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
-                const totalEmission = emissionPerKg * weightInKg;
-                
-                console.log('Route details row:', {
-                  route: `${route.origin} to ${route.destination}`,
-                  weightInKg,
-                  emissionPerKg,
-                  totalEmission
-                });
-                
-                return (
-                  <React.Fragment key={route.id}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      {`${route.origin} to ${route.destination}`}
-                    </div>
-                    <div>{route.weight}</div>
-                    <div>{totalEmission.toFixed(2)}</div>
-                    <div>{(route.cost || 0).toFixed(2)}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRoutes.has(route.id)}
-                        onChange={() => handleRouteToggle(route.id)}
-                      />
-                      <ActionButton 
-                        title="Delete"
-                        onClick={() => handleDeleteRoute(route.id)}
-                      >
-                        🗑️
-                      </ActionButton>
-                    </div>
-                  </React.Fragment>
-                );
-              })}
-            </RouteDetailsTable>
-          </RouteDetailsContainer>
+                <option value="t">t</option>
+                <option value="kg">kg</option>
+              </UnitSelect>
+            </WeightContainer>
+            <AddButton 
+              onClick={handleAddRoute}
+              disabled={isLoading || !origin || !destination || !weight}
+            >
+              {isLoading ? <PulseLoader color="white" size={8} speedMultiplier={0.75}/> : 'Add Route'}
+            </AddButton>
+            <DownloadButton 
+              onClick={handleDownloadPDF}
+              disabled={isLoading || !routes || routes.length === 0}
+            >
+              Download PDF
+            </DownloadButton>
+          </SearchContainer>
+          <RouteDetails
+            sortedRoutes={sortedRoutes}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            handleSort={handleSort}
+            selectedRoutes={selectedRoutes}
+            routes={routes}
+            handleSelectAll={handleSelectAll}
+            handleRouteToggle={handleRouteToggle}
+            handleDeleteRoute={handleDeleteRoute}
+            ActionButton={ActionButton}
+          />
         </ContentContainer>
       )}
     </Container>
   );
 };
 
-export default MultipleRoutes; 
+export default MultipleRoutes;
