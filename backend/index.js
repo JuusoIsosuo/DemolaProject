@@ -18,24 +18,38 @@ app.get("/routes", async (req, res) => {
     const originCoordinates = req.query.originCoords;
     const destinationCoordinates = req.query.destCoords;
 
+    console.log(`Route request received: ${origin} -> ${destination}`);
+    console.log(`Coordinates: ${originCoordinates} -> ${destinationCoordinates}`);
+
     if (!originCoordinates || !destinationCoordinates) {
+      console.error("Missing coordinates in request");
       return res.status(400).json({ error: "Missing origin or destination coordinates" });
     }
-    const originCoordinatesArray = originCoordinates.split(",").map(Number);
-    const destinationCoordinatesArray = destinationCoordinates.split(",").map(Number);
+    
+    // Parse coordinates into arrays
+    const originCoordsArray = originCoordinates.split(",").map(Number);
+    const destCoordsArray = destinationCoordinates.split(",").map(Number);
 
-    if (originCoordinatesArray.length !== 2 || destinationCoordinatesArray.length !== 2) {
+    if (originCoordsArray.length !== 2 || destCoordsArray.length !== 2) {
+      console.error("Invalid coordinates format");
       return res.status(400).json({ error: "Invalid origin or destination coordinates" });
     }
 
+    console.log("Finding best routes...");
     // Find the best routes
-    const routes = await findBestRoutes(origin, destination, originCoordinatesArray, destinationCoordinatesArray);
+    const routes = await findBestRoutes(origin, destination, originCoordsArray, destCoordsArray);
+    
+    console.log("Routes found:", routes ? "Yes" : "No");
+    if (routes) {
+      console.log("Fastest route:", routes.fastest ? "Found" : "Not found");
+      console.log("Lowest emission route:", routes.lowestEmission ? "Found" : "Not found");
+    }
 
     res.json(routes);
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to find routes" });
+    console.error("Error in /routes endpoint:", error);
+    res.status(500).json({ error: "Failed to find routes", details: error.message });
   }
 })
 

@@ -13,7 +13,6 @@ CREATE TABLE connections (
   to_location_id INTEGER NOT NULL REFERENCES locations(id),
   transport TEXT NOT NULL CHECK (transport IN ('air', 'sea', 'rail', 'truck')),
   distance FLOAT NOT NULL,
-  emission FLOAT NOT NULL,
   time FLOAT NOT NULL,
   geometry JSONB NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

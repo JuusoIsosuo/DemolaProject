@@ -1,287 +1,171 @@
 const fs = require("fs");
 const path = require('path');
-const { findTruckRoute } = require('./find-routes.js');
+const { findTruckRoute } = require('./find-routes.js')
 const supabase = require('./config/database');
 
-// Haversine formula to calculate distance between two coordinates
-const haversineDistance = ([lon1, lat1], [lon2, lat2]) => {
-  const R = 6371; // Earth radius in km
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
+// Emission rates in kg CO2e per ton-km
+const EMISSION_RATES = {
+  truck: 30,    // Average truck emission rate
+  rail: 0.001,    // Electric train emission rate
+  sea: 25,     // Container ship emission rate
+  air: 284        // Cargo aircraft emission rate
 };
 
-// Find locations within a certain radius of a point
-const findLocationsInRadius = async (center, radiusKm) => {
+// Average load capacities in tons
+const LOAD_CAPACITIES = {
+  truck: 25,      // Standard truck capacity
+  rail: 2000,     // Freight train capacity
+  sea: 165000,     // Container ship capacity
+  air: 140        // Cargo aircraft capacity
+};
+
+// Calculate emission for a route segment
+const calculateEmission = (distance, transport) => {
+  const emissionRate = EMISSION_RATES[transport] || EMISSION_RATES.truck;
+  const loadCapacity = LOAD_CAPACITIES[transport] || LOAD_CAPACITIES.truck;
+  return distance * emissionRate / loadCapacity / 1000;
+};
+
+// Read the graph from the database
+const readGraph = async () => {
   try {
-    // Fetch all locations from the database
-    const { data: locations, error } = await supabase
+    // Fetch all locations
+    const { data: locations, error: locationsError } = await supabase
       .from('locations')
-      .select('id, name, coordinates');
+      .select('*');
     
-    if (error) {
-      console.error('Error fetching locations:', error);
-      return [];
-    }
-    
-    // Filter locations by distance
-    return locations.filter(location => {
-      const distance = haversineDistance(center, location.coordinates);
-      return distance <= radiusKm;
-    });
-  } catch (error) {
-    console.error('Error finding locations in radius:', error);
-    return [];
-  }
-};
-
-// Get connections between two locations
-const getConnectionsBetweenLocations = async (fromLocationId, toLocationId) => {
-  try {
-    // Fetch connections from the database
-    const { data: connections, error } = await supabase
-      .from('connections')
-      .select('*')
-      .or(`and(from_location_id.eq.${fromLocationId},to_location_id.eq.${toLocationId}),and(from_location_id.eq.${toLocationId},to_location_id.eq.${fromLocationId})`);
-    
-    if (error) {
-      console.error('Error fetching connections:', error);
-      return [];
-    }
-    
-    return connections || [];
-  } catch (error) {
-    console.error('Error getting connections between locations:', error);
-    return [];
-  }
-};
-
-// Read the graph from the Supabase database, but only for locations within a certain radius
-const readGraphFromDatabase = async (startCoords, endCoords) => {
-  try {
-    // Calculate the midpoint between start and end coordinates
-    const midLon = (startCoords[0] + endCoords[0]) / 2;
-    const midLat = (startCoords[1] + endCoords[1]) / 2;
-    const midpoint = [midLon, midLat];
-    
-    // Calculate the distance between start and end
-    const distance = haversineDistance(startCoords, endCoords);
-    
-    // Use a radius that's at least 1.5 times the direct distance to ensure we have enough locations
-    const radiusKm = Math.max(distance * 1.5, 100);
-    
-    // Find locations within the radius
-    const locations = await findLocationsInRadius(midpoint, radiusKm);
-    
-    if (locations.length === 0) {
-      console.log('No locations found within radius');
+    if (locationsError) {
+      console.error('Error fetching locations:', locationsError);
       return null;
     }
+
+    // Fetch all connections
+    const { data: connections, error: connectionsError } = await supabase
+      .from('connections')
+      .select('*');
     
-    // Build the graph structure
+    if (connectionsError) {
+      console.error('Error fetching connections:', connectionsError);
+      return null;
+    }
+
+    // Build the graph
     const graph = {};
     
     // Add all locations to the graph
     locations.forEach(location => {
+      if (!Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
+        console.error(`Invalid coordinates for location ${location.name}:`, location.coordinates);
+        return;
+      }
+      
       graph[location.name] = {
-        id: location.id,
         coordinates: location.coordinates,
         edges: []
       };
     });
-    
-    // Fetch connections in batches to avoid overwhelming the database
-    const batchSize = 50;
-    for (let i = 0; i < locations.length; i += batchSize) {
-      const batch = locations.slice(i, i + batchSize);
+
+    // Add all connections to the graph
+    connections.forEach(connection => {
+      const fromLocation = locations.find(loc => loc.id === connection.from_location_id);
+      const toLocation = locations.find(loc => loc.id === connection.to_location_id);
       
-      // Create a list of location IDs in this batch
-      const locationIds = batch.map(loc => loc.id);
-      
-      // Fetch connections where both locations are in this batch
-      const { data: connections, error } = await supabase
-        .from('connections')
-        .select('*')
-        .or(`and(from_location_id.in.(${locationIds.join(',')}),to_location_id.in.(${locationIds.join(',')}))`);
-      
-      if (error) {
-        console.error('Error fetching connections batch:', error);
-        continue;
-      }
-      
-      // Add connections to the graph
-      if (connections) {
-        connections.forEach(connection => {
-          // Find the location names for this connection
-          const fromLocation = locations.find(loc => loc.id === connection.from_location_id);
-          const toLocation = locations.find(loc => loc.id === connection.to_location_id);
-          
-          if (fromLocation && toLocation) {
-            // Add the connection to the from location
-            graph[fromLocation.name].edges.push({
-              node: toLocation.name,
-              transport: connection.transport,
-              distance: connection.distance,
-              emission: connection.emission,
-              time: connection.time,
-              geometry: connection.geometry
-            });
-            
-            // Add the connection to the to location (bidirectional)
-            graph[toLocation.name].edges.push({
-              node: fromLocation.name,
-              transport: connection.transport,
-              distance: connection.distance,
-              emission: connection.emission,
-              time: connection.time,
-              geometry: connection.geometry
-            });
-          }
+      if (fromLocation && toLocation) {
+        const emission = calculateEmission(connection.distance, connection.transport);
+        
+        // Add edge in both directions
+        graph[fromLocation.name].edges.push({
+          node: toLocation.name,
+          transport: connection.transport,
+          distance: connection.distance,
+          time: connection.time,
+          emission: emission,
+          geometry: connection.geometry
+        });
+
+        graph[toLocation.name].edges.push({
+          node: fromLocation.name,
+          transport: connection.transport,
+          distance: connection.distance,
+          time: connection.time,
+          emission: emission,
+          geometry: connection.geometry
         });
       }
-    }
-    
+    });
+
     return graph;
   } catch (error) {
-    console.error('Error reading graph from database:', error);
+    console.error('Error building graph from database:', error);
     return null;
   }
 };
 
 // Add start or end location to graph if not already in graph
 const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
-  // Check if the location already exists in the database
-  const { data: existingLocations, error: searchError } = await supabase
-    .from('locations')
-    .select('id')
-    .eq('name', newLocation);
-  
-  let locationId;
-  
-  if (searchError) {
-    console.error(`Error searching for location ${newLocation}:`, searchError);
+  if (!Array.isArray(newLocationCoords) || newLocationCoords.length !== 2) {
+    console.error(`Invalid coordinates for new location ${newLocation}:`, newLocationCoords);
     return graph;
   }
-  
-  if (existingLocations && existingLocations.length > 0) {
-    // Location already exists in the database
-    locationId = existingLocations[0].id;
-  } else {
-    // Insert the new location into the database
-    const { data: newLocationData, error: insertError } = await supabase
-      .from('locations')
-      .insert([{ 
-        name: newLocation, 
-        coordinates: newLocationCoords 
-      }])
-      .select('id');
-    
-    if (insertError) {
-      console.error(`Error inserting location ${newLocation}:`, insertError);
-      return graph;
-    }
-    
-    locationId = newLocationData[0].id;
-  }
-  
-  // Add the location to the graph
-  graph[newLocation] = {
-    id: locationId,
-    coordinates: newLocationCoords,
-    edges: []
-  };
 
-  // Find locations within a reasonable radius (e.g., 500km)
-  const nearbyLocations = await findLocationsInRadius(newLocationCoords, 500);
-  
-  // Loop through nearby locations to create new edges
-  for (const nearbyLocation of nearbyLocations) {
-    if (nearbyLocation.name !== newLocation) {
-      // Check if a connection already exists in the database
-      const existingConnections = await getConnectionsBetweenLocations(locationId, nearbyLocation.id);
+  graph[newLocation] = {coordinates: newLocationCoords, edges: []};
+
+  // Loop through all existing locations in the graph to create new edges
+  for (const existingNode in graph) {
+    if (existingNode !== newLocation) {
+      const existingNodeCoords = graph[existingNode].coordinates;
       
-      if (existingConnections && existingConnections.length > 0) {
-        // Connection already exists in the database, add it to the graph
-        const connection = existingConnections[0];
+      let distance, time, geometry;
+      try {
+        console.log(`Finding truck route between ${newLocation} and ${existingNode}`);
+        console.log(`Coordinates: ${JSON.stringify(newLocationCoords)} -> ${JSON.stringify(existingNodeCoords)}`);
         
-        graph[newLocation].edges.push({
-          node: nearbyLocation.name,
-          transport: connection.transport,
-          distance: connection.distance,
-          emission: connection.emission,
-          time: connection.time,
-          geometry: connection.geometry
-        });
+        const result = await findTruckRoute(newLocationCoords, existingNodeCoords, 2000);
         
-        if (graph[nearbyLocation.name]) {
-          graph[nearbyLocation.name].edges.push({
-            node: newLocation,
-            transport: connection.transport,
-            distance: connection.distance,
-            emission: connection.emission,
-            time: connection.time,
-            geometry: connection.geometry
-          });
-        }
-      } else {
-        // Calculate a new truck route
-        let distance, emission, time, geometry;
-        try {
-          [distance, emission, time, geometry] = await findTruckRoute(newLocationCoords, nearbyLocation.coordinates, maxDistance = 2000);
-        } catch (error) {
-          console.log("Unable to find truck route:", error.response?.data?.message || error.message);
+        if (!result || !Array.isArray(result) || result.length !== 3) {
+          console.log(`Invalid result from findTruckRoute:`, result);
           continue;
         }
         
-        if (!distance || !emission || !time || !geometry) {
-          console.log("Unable to find truck route");
+        [distance, time, geometry] = result;
+        
+        if (!distance || !time || !geometry) {
+          console.log("Missing required route data");
           continue;
         }
         
-        // Insert the new connection into the database
-        const { error: insertConnectionError } = await supabase
-          .from('connections')
-          .insert([{
-            from_location_id: locationId,
-            to_location_id: nearbyLocation.id,
-            transport: 'truck',
-            distance,
-            emission,
-            time,
-            geometry
-          }]);
-        
-        if (insertConnectionError) {
-          console.error(`Error inserting connection:`, insertConnectionError);
-          continue;
+        console.log(`Found route: distance=${distance}km, time=${time}h`);
+      } catch (error) {
+        console.log("Unable to find truck route:", error.message);
+        if (error.response) {
+          console.log("API Error details:", error.response.data);
         }
-        
-        // Add the new edge for both directions
-        graph[newLocation].edges.push({
-          node: nearbyLocation.name,
-          transport: "truck",
-          distance: distance,
-          emission: emission,
-          time: time,
-          geometry: geometry
-        });
-
-        if (graph[nearbyLocation.name]) {
-          graph[nearbyLocation.name].edges.push({
-            node: newLocation,
-            transport: "truck",
-            distance: distance,
-            emission: emission,
-            time: time,
-            geometry: geometry
-          });
-        }
+        continue;
       }
+
+      const emission = calculateEmission(distance, 'truck');
+      console.log(`Calculated emission: ${emission} kg CO2e`);
+        
+      // Add the new edge for both directions
+      graph[newLocation].edges.push({
+        node: existingNode,
+        transport: "truck",
+        distance: distance,
+        emission: emission,
+        time: time,
+        geometry: geometry
+      });
+
+      graph[existingNode].edges.push({
+        node: newLocation,
+        transport: "truck",
+        distance: distance,
+        emission: emission,
+        time: time,
+        geometry: geometry
+      });
     }
-  }
+  };
 
   return graph;
 };
@@ -350,19 +234,15 @@ const dijkstra = (graph, start, end, costType) => {
 
 // Main function to find optimal routes
 const findBestRoutes = async (start, end, startCoords, endCoords) => {
-  // Read the graph from the database, focusing on the area between start and end
-  let graph = await readGraphFromDatabase(startCoords, endCoords);
-  
-  if (!graph) {
-    console.error('Failed to read graph from database');
-    return { fastest: null, lowestEmission: null };
-  }
+  let graph = await readGraph();
 
   // Add start and end locations to the graph if they are not already there
   if (!graph[start]) {
+    console.log(`Adding start location ${start} to graph`);
     graph = await addLocationToGraph(graph, start, startCoords);
   }
   if (!graph[end]) {
+    console.log(`Adding end location ${end} to graph`);
     graph = await addLocationToGraph(graph, end, endCoords);
   }
 
