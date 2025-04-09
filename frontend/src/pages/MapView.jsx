@@ -1,3 +1,4 @@
+// Import necessary dependencies and components
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import styled from '@emotion/styled';
@@ -7,6 +8,7 @@ import RouteLegend from '../components/RouteLegend';
 import EmissionControls from '../components/EmissionControls';
 import axios from 'axios';
 
+// Styled components for layout
 const PageContainer = styled.div`
   display: grid;
   grid-template-columns: minmax(auto, 1200px) 300px;
@@ -17,6 +19,7 @@ const PageContainer = styled.div`
   background-color: #f8fafc;
 `;
 
+// Main content area styling
 const MainContent = styled.div`
   display: flex;
   flex-direction: column;
@@ -28,6 +31,7 @@ const MainContent = styled.div`
   width: 100%;
 `;
 
+// Map container styling
 const MapContent = styled.div`
   flex: 1;
   position: relative;
@@ -35,6 +39,7 @@ const MapContent = styled.div`
   width: 100%;
 `;
 
+// Search bar container styling
 const SearchContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -47,6 +52,7 @@ const SearchContainer = styled.div`
   width: 100%;
 `;
 
+// Bottom controls container styling
 const ControlsContainer = styled.div`
   display: flex;
   gap: 18rem;
@@ -57,6 +63,7 @@ const ControlsContainer = styled.div`
   width: 100%;
 `;
 
+// Input field styling
 const SearchInput = styled.input`
   padding: 8px 12px;
   border: 1px solid #e2e8f0;
@@ -72,16 +79,19 @@ const SearchInput = styled.input`
   }
 `;
 
+// Weight input container styling
 const WeightContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 5px;
 `;
 
+// Weight input field styling
 const WeightInput = styled(SearchInput)`
   width: 80px;
 `;
 
+// Unit selector styling
 const UnitSelect = styled.select`
   padding: 8px;
   border: 1px solid #e2e8f0;
@@ -97,6 +107,7 @@ const UnitSelect = styled.select`
   }
 `;
 
+// Location swap button styling
 const SwapButton = styled.button`
   background-color: #2563eb;
   color: white;
@@ -116,6 +127,7 @@ const SwapButton = styled.button`
   }
 `;
 
+// Calculate route button styling
 const CalculateButton = styled.button`
   padding: 8px 16px;
   background-color: #2563eb;
@@ -136,12 +148,14 @@ const CalculateButton = styled.button`
   }
 `;
 
+// Route type selector container
 const RouteTypeSelect = styled.div`
   display: flex;
   gap: 10px;
   margin-left: 10px;
 `;
 
+// Route type button styling
 const RouteTypeButton = styled.button`
   padding: 8px 16px;
   background-color: ${props => {
@@ -167,6 +181,7 @@ const RouteTypeButton = styled.button`
   }
 `;
 
+// Emission settings panel styling
 const EmissionSettingsBox = styled.div`
   background: white;
   padding: 1.5rem;
@@ -176,6 +191,7 @@ const EmissionSettingsBox = styled.div`
   align-self: start;
 `;
 
+// Settings box title styling
 const BoxTitle = styled.h2`
   font-size: 1.25rem;
   color: #1e293b;
@@ -184,24 +200,34 @@ const BoxTitle = styled.h2`
   border-bottom: 1px solid #e2e8f0;
 `;
 
+// Main MapView component
 const MapView = () => {
+  // Initialize location from router
   const location = useLocation();
+  
+  // State management for transport types and emissions
   const [selectedTransportTypes, setSelectedTransportTypes] = useState(['all']);
   const [truckEmissionClass, setTruckEmissionClass] = useState('EURO VI');
   const [trainType, setTrainType] = useState('electric');
+  
+  // State management for route inputs
   const [origin, setOrigin] = useState(location.state?.origin || '');
   const [destination, setDestination] = useState(location.state?.destination || '');
   const [weight, setWeight] = useState(location.state?.weight || '');
   const [weightUnit, setWeightUnit] = useState(location.state?.weightUnit || 'kg');
   const [routeType, setRouteType] = useState('green');
+  
+  // State management for loading and route data
   const [isLoading, setIsLoading] = useState(false);
   const [routeData, setRouteData] = useState(null);
 
+  // Swap origin and destination locations
   const handleSwapLocations = () => {
     setOrigin(destination);
     setDestination(origin);
   };
 
+  // Get coordinates from address using Mapbox API
   const getCoordinates = async (address) => {
     try {
       const response = await axios.get(
@@ -216,6 +242,7 @@ const MapView = () => {
     return null;
   };
 
+  // Calculate route using backend API
   const calculateRoute = async () => {
     if (!origin || !destination) return;
     
@@ -241,9 +268,11 @@ const MapView = () => {
     }
   };
 
+  // Render the map view interface
   return (
     <PageContainer>
       <MainContent>
+        {/* Search and input controls */}
         <SearchContainer>
           <SearchInput
             type="text"
@@ -293,6 +322,7 @@ const MapView = () => {
           </RouteTypeSelect>
         </SearchContainer>
 
+        {/* Transport type and route legend controls */}
         <ControlsContainer>
           <TransportTypeSelector
             selectedTypes={selectedTransportTypes}
@@ -301,6 +331,7 @@ const MapView = () => {
           <RouteLegend />
         </ControlsContainer>
 
+        {/* Map component */}
         <MapContent>
           <Map
             origin={origin}
@@ -314,6 +345,8 @@ const MapView = () => {
           />
         </MapContent>
       </MainContent>
+      
+      {/* Emission settings sidebar */}
       <EmissionSettingsBox>
         <BoxTitle>Emission Settings</BoxTitle>
         <EmissionControls

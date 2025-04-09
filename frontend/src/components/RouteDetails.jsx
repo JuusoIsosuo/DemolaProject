@@ -60,13 +60,22 @@ const ActionButton = styled.button`
 // RouteDetails component displays a sortable table of routes with their details
 const RouteDetails = ({
   routes,
+  setRoutes,
   selectedRoutes,
-  setSelectedRoutes,
-  onDeleteRoute
+  setSelectedRoutes
 }) => {
   // State for sorting functionality
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
+
+  const handleDeleteRoute = (routeId) => {
+    setRoutes(routes.filter(route => route.id !== routeId));
+    setSelectedRoutes(prev => {
+      const next = new Set(prev);
+      next.delete(routeId);
+      return next;
+    });
+  };
 
   // Handle selection of individual routes
   const handleRouteToggle = (routeId) => {
@@ -211,7 +220,7 @@ const RouteDetails = ({
                 />
                 <ActionButton 
                   title="Delete"
-                  onClick={() => onDeleteRoute(route.id)}
+                  onClick={() => handleDeleteRoute(route.id)}
                 >
                   🗑️
                 </ActionButton>

@@ -69,12 +69,11 @@ const InfoSection = styled.div`
 `;
 
 const Map = ({ 
-  origin, 
-  destination, 
-  weight, 
-  weightUnit, 
-  routeType,
-  // routeData is an array with each selected route object.
+  origin = '', 
+  destination = '', 
+  weight = '', 
+  weightUnit = '', 
+  routeType = 'lowestEmission',
   routeData,
   onCalculateRoute,
   isLoading 
@@ -210,27 +209,73 @@ const Map = ({
     }
   }, [mapInitialized, location.state?.shouldCalculateRoute, origin, destination]);
 
-  // Update route effect when routeData changes.
+  // Update route effect
   useEffect(() => {
     if (routeData && mapInitialized) {
-      showRoutes(routeData);
+      if (Array.isArray(routeData)) {
+        showMultipleRoutes(routeData);
+      } else {
+        showSingleRoute(routeData);
+      }
     }
   }, [routeType, routeData, mapInitialized]);
 
   // Route information update effect
   useEffect(() => {
-    if (routeData && Array.isArray(routeData) && routeData.length > 0) {
-      // Use the first route's information as default for the overlay.
-      const firstRoute = routeType === 'fastest' ? routeData[0].fastest : routeData[0].lowestEmission;
-      if (firstRoute && firstRoute.geojson.features.length > 0) {
-        handleRouteClick(firstRoute.geojson.features[0], firstRoute);
+    if (!routeData) return;
+
+    if (Array.isArray(routeData)) {
+      const firstRoute = routeData[0];
+      if (firstRoute) {
+        const currentRoute = routeType === 'fastest' ? firstRoute.fastest : firstRoute.lowestEmission;
+        if (currentRoute && currentRoute.geojson.features.length > 0) {
+          handleRouteClick(currentRoute.geojson.features[0], currentRoute);
+        }
+      }
+    } else {
+      const currentRoute = routeType === 'fastest' ? routeData.fastest : routeData.lowestEmission;
+      if (currentRoute && currentRoute.geojson.features.length > 0) {
+        handleRouteClick(currentRoute.geojson.features[0], currentRoute);
       }
     }
   }, [routeType, routeData]);
 
-  // Merges geoJSON features from all selected routes, adds the source and layers, and then fits bounds over all features.
-  const showRoutes = (dataArray) => {
-    // Remove existing layers and sources.
+  const showSingleRoute = (data) => {
+    clearMapLayers();
+    const routeData = routeType === 'fastest' ? data.fastest : data.lowestEmission;
+    
+    map.current.addSource('routes', {
+      type: 'geojson',
+      data: routeData.geojson,
+    });
+
+    addRouteLayers(routeData);
+    fitMapToBounds(routeData.geojson.features);
+  };
+
+  const showMultipleRoutes = (dataArray) => {
+    clearMapLayers();
+    const combinedGeojson = { type: 'FeatureCollection', features: [] };
+    
+    dataArray.forEach(data => {
+      const chosenRoute = routeType === 'fastest' ? data.fastest : data.lowestEmission;
+      if (chosenRoute && chosenRoute.geojson) {
+        combinedGeojson.features.push(...chosenRoute.geojson.features);
+      }
+    });
+
+    if (combinedGeojson.features.length > 0) {
+      map.current.addSource('routes', {
+        type: 'geojson',
+        data: combinedGeojson,
+      });
+
+      addRouteLayers(combinedGeojson);
+      fitMapToBounds(combinedGeojson.features);
+    }
+  };
+
+  const clearMapLayers = () => {
     ['sea', 'air', 'truck', 'rail'].forEach(type => {
       if (map.current.getLayer(`route-${type}`)) {
         map.current.removeLayer(`route-${type}`);
@@ -239,88 +284,70 @@ const Map = ({
         map.current.removeLayer(`route-${type}-highlighted`);
       }
     });
+
     if (map.current.getSource('routes')) {
       map.current.removeSource('routes');
     }
     if (map.current.getSource('highlighted-route')) {
       map.current.removeSource('highlighted-route');
     }
+  };
 
-    // Merge geoJSON features from each route.
-    const combinedGeojson = { type: 'FeatureCollection', features: [] };
-    dataArray.forEach(data => {
-      const chosenRoute = routeType === 'fastest' ? data.fastest : data.lowestEmission;
-      if (chosenRoute && chosenRoute.geojson) {
-        combinedGeojson.features.push(...chosenRoute.geojson.features);
-      }
-    });
-
-    // Only add the source and layers if there are features to display.
-    if (combinedGeojson.features.length > 0) {
-      map.current.addSource('routes', {
-        type: 'geojson',
-        data: combinedGeojson,
+  const addRouteLayers = (routeData) => {
+    ['sea', 'air', 'truck', 'rail'].forEach(transportType => {
+      map.current.addLayer({
+        id: `route-${transportType}`,
+        type: 'line',
+        source: 'routes',
+        paint: {
+          'line-color': getRouteColor(transportType),
+          'line-width': 6,
+          'line-opacity': 0.8,
+          'line-dasharray': getRouteDashArray(transportType)
+        },
+        filter: ['==', 'transport', transportType],
       });
 
-      ['sea', 'air', 'truck', 'rail'].forEach(transportType => {
-        map.current.addLayer({
-          id: `route-${transportType}`,
-          type: 'line',
-          source: 'routes',
-          paint: {
-            'line-color': getRouteColor(transportType),
-            'line-width': 6,
-            'line-opacity': 0.8,
-            'line-dasharray': getRouteDashArray(transportType)
-          },
-          filter: ['==', 'transport', transportType],
-        });
-
-        map.current.on('click', `route-${transportType}`, (e) => {
-          if (e.features.length > 0) {
-            const clickedFeature = e.features[0];
-            handleRouteClick(clickedFeature, {
-              totalDistance: 0,
-              totalTime: 0,
-              totalEmission: 0,
-              geojson: combinedGeojson
-            });
-          }
-        });
-
-        map.current.on('mouseenter', `route-${transportType}`, () => {
-          map.current.getCanvas().style.cursor = 'pointer';
-        });
-
-        map.current.on('mouseleave', `route-${transportType}`, () => {
-          map.current.getCanvas().style.cursor = '';
-        });
-      });
-
-      // Compute bounds encompassing all features.
-      const bounds = new mapboxgl.LngLatBounds();
-      combinedGeojson.features.forEach(feature => {
-        // Handle both LineString and MultiLineString
-        if (feature.geometry.type === "LineString") {
-          feature.geometry.coordinates.forEach(coord => {
-            bounds.extend(coord);
-          });
-        } else if (feature.geometry.type === "MultiLineString") {
-          feature.geometry.coordinates.forEach(line => {
-            line.forEach(coord => {
-              bounds.extend(coord);
-            });
-          });
+      map.current.on('click', `route-${transportType}`, (e) => {
+        if (e.features.length > 0) {
+          const clickedFeature = e.features[0];
+          handleRouteClick(clickedFeature, routeData);
         }
       });
 
-      // Fit map to bounds with padding.
-      map.current.fitBounds(bounds, {
-        padding: 50,
-        pitch: 0,
-        bearing: 0
+      map.current.on('mouseenter', `route-${transportType}`, () => {
+        map.current.getCanvas().style.cursor = 'pointer';
       });
-    }
+
+      map.current.on('mouseleave', `route-${transportType}`, () => {
+        map.current.getCanvas().style.cursor = '';
+      });
+    });
+  };
+
+  const fitMapToBounds = (features) => {
+    if (!features || features.length === 0) return;
+
+    const bounds = new mapboxgl.LngLatBounds();
+    features.forEach(feature => {
+      if (feature.geometry.type === 'LineString') {
+        feature.geometry.coordinates.forEach(coord => {
+          bounds.extend(coord);
+        });
+      } else if (feature.geometry.type === 'MultiLineString') {
+        feature.geometry.coordinates.forEach(line => {
+          line.forEach(coord => {
+            bounds.extend(coord);
+          });
+        });
+      }
+    });
+
+    map.current.fitBounds(bounds, {
+      padding: 50,
+      pitch: 0,
+      bearing: 0
+    });
   };
 
   const formatDuration = (seconds) => {

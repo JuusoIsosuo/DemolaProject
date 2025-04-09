@@ -61,16 +61,6 @@ const MultipleRoutes = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRoutes, setSelectedRoutes] = useState(new Set());
 
-  // Handle deletion of a route
-  const handleDeleteRoute = (routeId) => {
-    setRoutes(routes.filter(route => route.id !== routeId));
-    setSelectedRoutes(prev => {
-      const next = new Set(prev);
-      next.delete(routeId);
-      return next;
-    });
-  };
-
   // Filter routes data for selected routes only
   const selectedRoutesData = routes
     .filter(route => selectedRoutes.has(route.id))
@@ -122,9 +112,9 @@ const MultipleRoutes = () => {
 
         <RouteDetails
           routes={routes}
+          setRoutes={setRoutes}
           selectedRoutes={selectedRoutes}
           setSelectedRoutes={setSelectedRoutes}
-          onDeleteRoute={handleDeleteRoute}
         />
       </ContentContainer>
     </Container>
