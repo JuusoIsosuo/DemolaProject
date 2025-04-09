@@ -17,11 +17,16 @@ The currently included locations.
 
 ### How to Generate the Graph
 
-If you make modifications to the graph calculation code (`build-graph.js` or `find-routes.js`), you need to run the script to regenerate the graph. Run this in the backend root:
+If you make modifications to the code (`build-graph.js` or `find-routes.js`) or the location files in the `data/`, you need to run the script to repopulate the database.
+
+If you added new locations run this in the backend root to add the locations:
 ```
 node route-calculation/build-graphs.js
 ```
-Running this may take several minutes.
+If you made modifications to the code run the script with the `--clear` flag (DON'T DO THIS UNNECESSARILY, this will completely reset the database and take a very long time):
+```
+node route-calculation/build-graphs.js --clear
+```
 
 
 ## Setup & Run the Project
@@ -37,12 +42,14 @@ Install `searoute` python library.
 pip install searoute
 ```
 
-### 2. Add Your API Token as a Local Environment Variable
+### 2. Add Local Environment Variables
 
-Make a new file called `.env` in the `backend` directory. This file will be ignored by git. Then add your api token in the file:
+Make a new file called `.env` in the `backend` directory. This file will be ignored by git. Then add the following:
 
 ```
-MAPBOX_API_TOKEN = yourapitoken
+MAPBOX_API_TOKEN=yourapitoken
+DATABASE_URL=databaseurl
+DATABASE_KEY=databasekey
 ```
 
 ### 3. Start the Development Server
