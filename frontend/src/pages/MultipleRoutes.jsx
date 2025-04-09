@@ -668,30 +668,35 @@ const MultipleRoutes = () => {
     }
   };
 
-  return (
-    <Container>
-      <TabContainer>
-        <Tab 
-          active={activeTab === 'kartta'} 
-          onClick={() => setActiveTab('kartta')}
-        >
-          Kartta
-        </Tab>
-        <Tab 
-          active={activeTab === 'tilastot'} 
-          onClick={() => setActiveTab('tilastot')}
-        >
-          Tilastot
-        </Tab>
-      </TabContainer>
+    // Compute selected routes' data
+    const selectedRoutesData = routes
+      .filter(route => selectedRoutes.has(route.id))
+      .map(route => route.routeData);
+
+    return (
+      <Container>
+        <TabContainer>
+          <Tab 
+            active={activeTab === 'kartta'} 
+            onClick={() => setActiveTab('kartta')}
+          >
+            Kartta
+          </Tab>
+          <Tab 
+            active={activeTab === 'tilastot'} 
+            onClick={() => setActiveTab('tilastot')}
+          >
+            Tilastot
+          </Tab>
+        </TabContainer>
 
       {activeTab === 'kartta' ? (
         <ContentContainer>
           <RouteLegend />
           <MapContainer>
-            <Map routeData={routeData} />
+            <Map routeData={selectedRoutesData} />
           </MapContainer>
-            <SearchContainer>
+          <SearchContainer>
               <SearchInput
                 placeholder="Origin"
                 value={origin}
@@ -730,19 +735,19 @@ const MultipleRoutes = () => {
                 Download PDF
               </DownloadButton>
             </SearchContainer>
-          <RouteDetails
-            sortedRoutes={sortedRoutes}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            handleSort={handleSort}
-            selectedRoutes={selectedRoutes}
-            routes={routes}
-            handleSelectAll={handleSelectAll}
-            handleRouteToggle={handleRouteToggle}
-            handleDeleteRoute={handleDeleteRoute}
-            ActionButton={ActionButton}
-          />
-        </ContentContainer>
+            <RouteDetails
+              sortedRoutes={sortedRoutes}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              handleSort={handleSort}
+              selectedRoutes={selectedRoutes}
+              routes={routes}
+              handleSelectAll={handleSelectAll}
+              handleRouteToggle={handleRouteToggle}
+              handleDeleteRoute={handleDeleteRoute}
+              ActionButton={ActionButton}
+            />
+          </ContentContainer>
       ) : (
         <ContentContainer>
           <StatsContainer>
