@@ -19,8 +19,6 @@ const haversineDistance = ([lon1, lat1], [lon2, lat2]) => {
 
 
 const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 284;
-  const totalLoad = 140;
   const speed_km_h = 800;
 
   const originCoords = [lon1, lat1];
@@ -29,24 +27,19 @@ const findAirRoute = ([lon1, lat1], [lon2, lat2]) => {
   const airRoute = turf.greatCircle(originCoords, destinationCoords, { units: 'kilometers', npoints: 100 });
 
   const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
-  const emission = (distance * emission_per_ton_km / totalLoad / 1000);
-  console.log("A_Emission: ", emission);
   const time = distance / speed_km_h;
 
   const geometry = airRoute.geometry;
 
   routeFound = true;
   if ( routeFound ) {
-    return [distance, emission, time, geometry];
+    return [distance, time, geometry];
   } else {
-    return [null, null, null, null];
+    return [null, null, null];
   }
 };
 
 const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
-  const emission_per_ton_km = 25;
-  const totalLoad = 165000;
-
   const originCoords = [lon1, lat1];
   const destinationCoords = [lon2, lat2];
 
@@ -55,12 +48,12 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
 
   if (pythonProcess.error) {
     console.error(`Error: ${pythonProcess.error.message}`);
-    return [null, null, null, null];
+    return [null, null, null];
   }
 
   if (pythonProcess.status !== 0) {
     console.error(`Python process exited with code ${pythonProcess.status}`);
-    return [null, null, null, null];
+    return [null, null, null];
   }
 
   // Parse the output from the Python script
@@ -68,23 +61,19 @@ const findSeaRoute = ([lon1, lat1], [lon2, lat2]) => {
   const route = JSON.parse(dataToSend);
 
   const distance = route.properties.length;
-  const emission = (distance * emission_per_ton_km / totalLoad / 1000);
-  console.log("S_Emission: ", emission);
   const time = route.properties.duration_hours;
   const geometry = {
     type: "LineString", coordinates: [originCoords, ...route.geometry.coordinates, destinationCoords]
   };
 
-  return [distance, emission, time, geometry];
+  return [distance, time, geometry];
 };
 
 const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
-  const emission_per_ton_km = 30;
-  const totalLoad = 25;
   // Don't bother caculating very long routes
   if (haversineDistance([lon1, lat1], [lon2, lat2]) > maxDistance) {
     console.log("   vvv Route too long vvv");
-    return [null, null, null, null];
+    return [null, null, null];
   }
 
   // Get the route from Mapbox API
@@ -94,12 +83,11 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
 
   // Check if a route was found
   if (!response.data.routes || response.data.routes.length === 0) {
-    return [null, null, null, null];
+    return [null, null, null];
   }
 
   const route = response.data.routes[0];
   const distance = route.distance / 1000;
-  const emission = (distance * emission_per_ton_km / totalLoad / 1000);
   const time = route.duration / 60 / 60;
   
   originCoords = [lon1, lat1];
@@ -109,31 +97,30 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
     type: "LineString", coordinates: [originCoords, ...route.geometry.coordinates, destinationCoords]
   };
 
-  return [distance, emission, time, geometry];
+  return [distance, time, geometry];
 };
 
-// !!! Not implemented !!!
 const findRailRoute = (coordinates) => {
-  const emission_per_ton_km = 0.001;
   const speed_km_h = 40;
-  const totalLoad = 2000;
 
   let totalDistance = 0;
-
   // Calculate the total distance along all waypoints
   for (let i = 0; i < coordinates.length - 1; i++) {
     totalDistance += haversineDistance(coordinates[i], coordinates[i + 1]);
   }
-
-  const emission = (totalDistance * emission_per_ton_km / totalLoad / 1000);
   const time = totalDistance / speed_km_h;
-  
+
   const geometry = {
     type: "LineString",
     coordinates: coordinates  // Use the full route coordinates
   };
 
-  return [totalDistance, emission, time, geometry];
+  routeFound = true;
+  if ( routeFound ) {
+    return [totalDistance, time, geometry];
+  } else {
+    return [null, null, null];
+  }
 };
 
 module.exports = { findAirRoute, findSeaRoute, findTruckRoute, findRailRoute };

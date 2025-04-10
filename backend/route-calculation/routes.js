@@ -1,19 +1,137 @@
 const fs = require("fs");
 const path = require('path');
 const { findTruckRoute } = require('./find-routes.js')
+const supabase = require('./config/database');
 
-// Read the graph from a JSON file
-const readGraph = () => {
-  const filePath = path.join(__dirname, 'graph.json');
-  if (fs.existsSync(filePath)) {
-    const data = fs.readFileSync(filePath);
-    return JSON.parse(data);
+// Emission rates in kg CO2e per ton-km
+const EMISSION_RATES = {
+  truck: 30,    // Average truck emission rate
+  rail: 0.001,    // Electric train emission rate
+  sea: 25,     // Container ship emission rate
+  air: 284        // Cargo aircraft emission rate
+};
+
+// Average load capacities in tons
+const LOAD_CAPACITIES = {
+  truck: 25,      // Standard truck capacity
+  rail: 2000,     // Freight train capacity
+  sea: 165000,     // Container ship capacity
+  air: 140        // Cargo aircraft capacity
+};
+
+// Calculate emission for a route segment
+const calculateEmission = (distance, transport) => {
+  const emissionRate = EMISSION_RATES[transport] || EMISSION_RATES.truck;
+  const loadCapacity = LOAD_CAPACITIES[transport] || LOAD_CAPACITIES.truck;
+  return distance * emissionRate / loadCapacity / 1000;
+};
+
+// Read the graph from the database or JSON file
+const readGraph = async (useDatabase = true) => {
+  try {
+    if (useDatabase) {
+      console.log('Reading graph from database');
+      // Fetch all locations
+      const { data: locations, error: locationsError } = await supabase
+        .from('locations')
+        .select('*');
+      
+      if (locationsError) {
+        console.error('Error fetching locations:', locationsError);
+        return null;
+      }
+
+      // Fetch all connections
+      const { data: connections, error: connectionsError } = await supabase
+        .from('connections')
+        .select('*');
+      
+      if (connectionsError) {
+        console.error('Error fetching connections:', connectionsError);
+        return null;
+      }
+
+      // Build the graph
+      const graph = {};
+      
+      // Add all locations to the graph
+      locations.forEach(location => {
+        if (!Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
+          console.error(`Invalid coordinates for location ${location.name}:`, location.coordinates);
+          return;
+        }
+        
+        graph[location.name] = {
+          coordinates: location.coordinates,
+          edges: []
+        };
+      });
+
+      // Add all connections to the graph
+      connections.forEach(connection => {
+        const fromLocation = locations.find(loc => loc.id === connection.from_location_id);
+        const toLocation = locations.find(loc => loc.id === connection.to_location_id);
+        
+        if (fromLocation && toLocation) {
+          const emission = calculateEmission(connection.distance, connection.transport);
+          
+          // Add edge in both directions
+          graph[fromLocation.name].edges.push({
+            node: toLocation.name,
+            transport: connection.transport,
+            distance: connection.distance,
+            time: connection.time,
+            emission: emission,
+            geometry: connection.geometry
+          });
+
+          graph[toLocation.name].edges.push({
+            node: fromLocation.name,
+            transport: connection.transport,
+            distance: connection.distance,
+            time: connection.time,
+            emission: emission,
+            geometry: connection.geometry
+          });
+        }
+      });
+
+      return graph;
+    } else {
+      // Read from JSON file
+      console.log('Reading graph from JSON file');
+      const filePath = path.join(__dirname, 'graph.json');
+      if (!fs.existsSync(filePath)) {
+        console.error('Graph file not found:', filePath);
+        return null;
+      }
+
+      const data = fs.readFileSync(filePath);
+      const jsonGraph = JSON.parse(data);
+
+      // Recalculate emissions for all edges
+      for (const node in jsonGraph) {
+        jsonGraph[node].edges = jsonGraph[node].edges.map(edge => ({
+          ...edge,
+          emission: calculateEmission(edge.distance, edge.transport)
+        }));
+      }
+
+      return jsonGraph;
+    }
+  } catch (error) {
+    console.error('Error building graph:', error);
+    return null;
   }
-  return null;
 };
 
 // Add start or end location to graph if not already in graph
 const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
+  if (!Array.isArray(newLocationCoords) || newLocationCoords.length !== 2) {
+    console.error(`Invalid coordinates for new location ${newLocation}:`, newLocationCoords);
+    return graph;
+  }
+
   graph[newLocation] = {coordinates: newLocationCoords, edges: []};
 
   // Loop through all existing locations in the graph to create new edges
@@ -21,18 +139,36 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
     if (existingNode !== newLocation) {
       const existingNodeCoords = graph[existingNode].coordinates;
       
-      let distance, emission, time, geometry;
+      let distance, time, geometry;
       try {
-        // Find truck route between the new location and the existing location
-        [distance, emission, time, geometry] = await findTruckRoute(newLocationCoords, existingNodeCoords, maxDistance = 2000);
+        console.log(`Finding truck route between ${newLocation} and ${existingNode}`);
+        console.log(`Coordinates: ${JSON.stringify(newLocationCoords)} -> ${JSON.stringify(existingNodeCoords)}`);
+        
+        const result = await findTruckRoute(newLocationCoords, existingNodeCoords, 2000);
+        
+        if (!result || !Array.isArray(result) || result.length !== 3) {
+          console.log(`Invalid result from findTruckRoute:`, result);
+          continue;
+        }
+        
+        [distance, time, geometry] = result;
+        
+        if (!distance || !time || !geometry) {
+          console.log("Missing required route data");
+          continue;
+        }
+        
+        console.log(`Found route: distance=${distance}km, time=${time}h`);
       } catch (error) {
-        console.log("Unable to find truck route:", error.response.data.message);
+        console.log("Unable to find truck route:", error.message);
+        if (error.response) {
+          console.log("API Error details:", error.response.data);
+        }
         continue;
       }
-      if ( !distance || !emission || !time || !geometry ) {
-        console.log("Unable to find truck route");
-        continue;
-      }
+
+      const emission = calculateEmission(distance, 'truck');
+      console.log(`Calculated emission: ${emission} kg CO2e`);
         
       // Add the new edge for both directions
       graph[newLocation].edges.push({
@@ -58,7 +194,7 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
   return graph;
 };
 
-// Dijkstra’s algorithm for finding the optimal path by costType
+// Dijkstra's algorithm for finding the optimal path by costType
 const dijkstra = (graph, start, end, costType) => {
   const pq = new Map();  // Priority queue
   const costs = {};      // Cost tracker
@@ -121,14 +257,16 @@ const dijkstra = (graph, start, end, costType) => {
 };
 
 // Main function to find optimal routes
-const findBestRoutes = async ( start, end, startCoords, endCoords ) => {
-  let graph = readGraph();
+const findBestRoutes = async (start, end, startCoords, endCoords) => {
+  let graph = await readGraph();
 
   // Add start and end locations to the graph if they are not already there
-  if ( !graph[start] ) {
+  if (!graph[start]) {
+    console.log(`Adding start location ${start} to graph`);
     graph = await addLocationToGraph(graph, start, startCoords);
   }
-  if ( !graph[end] ) {
+  if (!graph[end]) {
+    console.log(`Adding end location ${end} to graph`);
     graph = await addLocationToGraph(graph, end, endCoords);
   }
 
