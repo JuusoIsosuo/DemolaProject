@@ -190,8 +190,7 @@ const buildGraph = async (clearDatabase = false) => {
     for (let i = 0; i < railway_connections.length; i++) {
       const connection = railway_connections[i];
       const [fromName, toName] = connection.properties.route;
-      const fromCoords = connection.geometry.coordinates[0];
-      const toCoords = connection.geometry.coordinates[connection.geometry.coordinates.length - 1];
+      const coordinates = connection.geometry.coordinates;
       
       // Check if connection already exists
       const fromId = locationMap.get(fromName).id;
@@ -213,7 +212,7 @@ const buildGraph = async (clearDatabase = false) => {
         continue;
       }
 
-      const [distance, time, geometry] = findRailRoute(fromCoords, toCoords);
+      const [distance, time, geometry] = findRailRoute(coordinates);
       if (distance && time && geometry) {
         const { error } = await supabase
           .from('connections')

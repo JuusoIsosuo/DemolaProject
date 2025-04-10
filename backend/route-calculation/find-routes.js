@@ -100,18 +100,24 @@ const findTruckRoute = async ([lon1, lat1], [lon2, lat2], maxDistance) => {
   return [distance, time, geometry];
 };
 
-const findRailRoute = ([lon1, lat1], [lon2, lat2]) => {
+const findRailRoute = (coordinates) => {
   const speed_km_h = 40;
 
-  const distance = haversineDistance([lon1, lat1], [lon2, lat2]); // Calculate actual distance here
-  const time = distance / speed_km_h;
+  let totalDistance = 0;
+  // Calculate the total distance along all waypoints
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    totalDistance += haversineDistance(coordinates[i], coordinates[i + 1]);
+  }
+  const time = totalDistance / speed_km_h;
+
   const geometry = {
-    type: "LineString", coordinates: [[lon1, lat1], [lon2, lat2]] // Give calculated route here
+    type: "LineString",
+    coordinates: coordinates  // Use the full route coordinates
   };
 
   routeFound = true;
   if ( routeFound ) {
-    return [distance, time, geometry];
+    return [totalDistance, time, geometry];
   } else {
     return [null, null, null];
   }

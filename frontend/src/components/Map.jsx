@@ -69,11 +69,11 @@ const InfoSection = styled.div`
 `;
 
 const Map = ({ 
-  origin, 
-  destination, 
-  weight, 
-  weightUnit, 
-  routeType,
+  origin = '', 
+  destination = '', 
+  weight = '', 
+  weightUnit = '', 
+  routeType = 'lowestEmission',
   routeData,
   onCalculateRoute,
   isLoading 
@@ -90,7 +90,9 @@ const Map = ({
   // Convert address to coordinates using Mapbox Geocoding API
   const getCoordinates = async (address) => {
     try {
-      const response = await axios.get(`${GEOCODE_API}${encodeURIComponent(address)}.json?access_token=${API_TOKEN}`);
+      const response = await axios.get(
+        `${GEOCODE_API}${encodeURIComponent(address)}.json?access_token=${API_TOKEN}`
+      );
       if (response.data.features && response.data.features.length > 0) {
         return response.data.features[0].center;
       }
@@ -119,10 +121,12 @@ const Map = ({
     map.current.on('style.load', () => {
       const layers = map.current.getStyle().layers;
       for (const layer of layers) {
-        if (layer.type === 'symbol' && 
-            layer.layout && 
-            layer.layout['text-field'] && 
-            (layer.id.includes('label') || layer.id.includes('place'))) {
+        if (
+          layer.type === 'symbol' && 
+          layer.layout && 
+          layer.layout['text-field'] && 
+          (layer.id.includes('label') || layer.id.includes('place'))
+        ) {
           map.current.setLayoutProperty(layer.id, 'visibility', 'none');
         }
       }
@@ -140,7 +144,7 @@ const Map = ({
     };
   }, []);
 
-  // Add markers effect
+  // Add markers effect for origin and destination
   useEffect(() => {
     const addLocationMarker = async (location, type) => {
       if (!location || !map.current) return;
@@ -185,6 +189,7 @@ const Map = ({
       }
     };
 
+    // Remove existing markers
     const markers = document.getElementsByClassName('mapboxgl-marker');
     while (markers.length > 0) {
       markers[0].remove();
@@ -196,7 +201,7 @@ const Map = ({
     }
   }, [origin, destination, mapInitialized]);
 
-  // Calculate route effect
+  // Trigger route calculation if needed.
   useEffect(() => {
     if (mapInitialized && location.state?.shouldCalculateRoute && origin && destination) {
       onCalculateRoute();
@@ -207,21 +212,70 @@ const Map = ({
   // Update route effect
   useEffect(() => {
     if (routeData && mapInitialized) {
-      showRoutes(routeData);
+      if (Array.isArray(routeData)) {
+        showMultipleRoutes(routeData);
+      } else {
+        showSingleRoute(routeData);
+      }
     }
   }, [routeType, routeData, mapInitialized]);
 
   // Route information update effect
   useEffect(() => {
-    if (routeData) {
+    if (!routeData) return;
+
+    if (Array.isArray(routeData)) {
+      const firstRoute = routeData[0];
+      if (firstRoute) {
+        const currentRoute = routeType === 'fastest' ? firstRoute.fastest : firstRoute.lowestEmission;
+        if (currentRoute && currentRoute.geojson.features.length > 0) {
+          handleRouteClick(currentRoute.geojson.features[0], currentRoute);
+        }
+      }
+    } else {
       const currentRoute = routeType === 'fastest' ? routeData.fastest : routeData.lowestEmission;
-      if (currentRoute.geojson.features.length > 0) {
+      if (currentRoute && currentRoute.geojson.features.length > 0) {
         handleRouteClick(currentRoute.geojson.features[0], currentRoute);
       }
     }
   }, [routeType, routeData]);
 
-  const showRoutes = (data) => {
+  const showSingleRoute = (data) => {
+    clearMapLayers();
+    const routeData = routeType === 'fastest' ? data.fastest : data.lowestEmission;
+    
+    map.current.addSource('routes', {
+      type: 'geojson',
+      data: routeData.geojson,
+    });
+
+    addRouteLayers(routeData);
+    fitMapToBounds(routeData.geojson.features);
+  };
+
+  const showMultipleRoutes = (dataArray) => {
+    clearMapLayers();
+    const combinedGeojson = { type: 'FeatureCollection', features: [] };
+    
+    dataArray.forEach(data => {
+      const chosenRoute = routeType === 'fastest' ? data.fastest : data.lowestEmission;
+      if (chosenRoute && chosenRoute.geojson) {
+        combinedGeojson.features.push(...chosenRoute.geojson.features);
+      }
+    });
+
+    if (combinedGeojson.features.length > 0) {
+      map.current.addSource('routes', {
+        type: 'geojson',
+        data: combinedGeojson,
+      });
+
+      addRouteLayers(combinedGeojson);
+      fitMapToBounds(combinedGeojson.features);
+    }
+  };
+
+  const clearMapLayers = () => {
     ['sea', 'air', 'truck', 'rail'].forEach(type => {
       if (map.current.getLayer(`route-${type}`)) {
         map.current.removeLayer(`route-${type}`);
@@ -237,14 +291,9 @@ const Map = ({
     if (map.current.getSource('highlighted-route')) {
       map.current.removeSource('highlighted-route');
     }
+  };
 
-    const routeData = routeType === 'fastest' ? data.fastest : data.lowestEmission;
-
-    map.current.addSource('routes', {
-      type: 'geojson',
-      data: routeData.geojson,
-    });
-
+  const addRouteLayers = (routeData) => {
     ['sea', 'air', 'truck', 'rail'].forEach(transportType => {
       map.current.addLayer({
         id: `route-${transportType}`,
@@ -274,20 +323,32 @@ const Map = ({
         map.current.getCanvas().style.cursor = '';
       });
     });
+  };
 
-    if (!map.current.getSource('routes')) {
-      const coordinates = routeData.geojson.features[0].geometry.coordinates;
-      const bounds = coordinates.reduce((bounds, coord) => {
-        return bounds.extend(coord);
-      }, new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]));
+  const fitMapToBounds = (features) => {
+    if (!features || features.length === 0) return;
 
-      map.current.fitBounds(bounds, {
-        padding: 50,
-        pitch: 0,
-        bearing: 0
-      });
-    }
-  }
+    const bounds = new mapboxgl.LngLatBounds();
+    features.forEach(feature => {
+      if (feature.geometry.type === 'LineString') {
+        feature.geometry.coordinates.forEach(coord => {
+          bounds.extend(coord);
+        });
+      } else if (feature.geometry.type === 'MultiLineString') {
+        feature.geometry.coordinates.forEach(line => {
+          line.forEach(coord => {
+            bounds.extend(coord);
+          });
+        });
+      }
+    });
+
+    map.current.fitBounds(bounds, {
+      padding: 50,
+      pitch: 0,
+      bearing: 0
+    });
+  };
 
   const formatDuration = (seconds) => {
     if (!seconds) return '-';
@@ -340,14 +401,16 @@ const Map = ({
     }
     
     setSelectedRoute({
-      length: route.totalDistance.toFixed(0) || '-',
-      duration: formatDuration(route.totalTime * 3600) || '-',
-      emissions: formatEmissions(route.totalEmission * weightValue) || '-',
-      segments: route.geojson.features.map(feature => ({
-        transport: translateTransportType(feature.properties.transport),
-        from: feature.properties.from || '-',
-        to: feature.properties.to || '-'
-      }))
+      length: route.totalDistance ? route.totalDistance.toFixed(0) : '-',
+      duration: formatDuration(route.totalTime ? route.totalTime * 3600 : 0) || '-',
+      emissions: formatEmissions(route.totalEmission ? route.totalEmission * weightValue : 0) || '-',
+      segments: route.geojson && route.geojson.features
+        ? route.geojson.features.map(feature => ({
+            transport: translateTransportType(feature.properties.transport),
+            from: feature.properties.from || '-',
+            to: feature.properties.to || '-'
+          }))
+        : []
     });
   };
 
@@ -367,10 +430,12 @@ const Map = ({
     
     const layers = map.current.getStyle().layers;
     for (const layer of layers) {
-      if (layer.type === 'symbol' && 
-          layer.layout && 
-          layer.layout['text-field'] && 
-          (layer.id.includes('label') || layer.id.includes('place'))) {
+      if (
+        layer.type === 'symbol' &&
+        layer.layout &&
+        layer.layout['text-field'] &&
+        (layer.id.includes('label') || layer.id.includes('place'))
+      ) {
         map.current.setLayoutProperty(
           layer.id,
           'visibility',
