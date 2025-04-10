@@ -26,77 +26,101 @@ const calculateEmission = (distance, transport) => {
   return distance * emissionRate / loadCapacity / 1000;
 };
 
-// Read the graph from the database
-const readGraph = async () => {
+// Read the graph from the database or JSON file
+const readGraph = async (useDatabase = true) => {
   try {
-    // Fetch all locations
-    const { data: locations, error: locationsError } = await supabase
-      .from('locations')
-      .select('*');
-    
-    if (locationsError) {
-      console.error('Error fetching locations:', locationsError);
-      return null;
-    }
-
-    // Fetch all connections
-    const { data: connections, error: connectionsError } = await supabase
-      .from('connections')
-      .select('*');
-    
-    if (connectionsError) {
-      console.error('Error fetching connections:', connectionsError);
-      return null;
-    }
-
-    // Build the graph
-    const graph = {};
-    
-    // Add all locations to the graph
-    locations.forEach(location => {
-      if (!Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
-        console.error(`Invalid coordinates for location ${location.name}:`, location.coordinates);
-        return;
+    if (useDatabase) {
+      console.log('Reading graph from database');
+      // Fetch all locations
+      const { data: locations, error: locationsError } = await supabase
+        .from('locations')
+        .select('*');
+      
+      if (locationsError) {
+        console.error('Error fetching locations:', locationsError);
+        return null;
       }
-      
-      graph[location.name] = {
-        coordinates: location.coordinates,
-        edges: []
-      };
-    });
 
-    // Add all connections to the graph
-    connections.forEach(connection => {
-      const fromLocation = locations.find(loc => loc.id === connection.from_location_id);
-      const toLocation = locations.find(loc => loc.id === connection.to_location_id);
+      // Fetch all connections
+      const { data: connections, error: connectionsError } = await supabase
+        .from('connections')
+        .select('*');
       
-      if (fromLocation && toLocation) {
-        const emission = calculateEmission(connection.distance, connection.transport);
+      if (connectionsError) {
+        console.error('Error fetching connections:', connectionsError);
+        return null;
+      }
+
+      // Build the graph
+      const graph = {};
+      
+      // Add all locations to the graph
+      locations.forEach(location => {
+        if (!Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
+          console.error(`Invalid coordinates for location ${location.name}:`, location.coordinates);
+          return;
+        }
         
-        // Add edge in both directions
-        graph[fromLocation.name].edges.push({
-          node: toLocation.name,
-          transport: connection.transport,
-          distance: connection.distance,
-          time: connection.time,
-          emission: emission,
-          geometry: connection.geometry
-        });
+        graph[location.name] = {
+          coordinates: location.coordinates,
+          edges: []
+        };
+      });
 
-        graph[toLocation.name].edges.push({
-          node: fromLocation.name,
-          transport: connection.transport,
-          distance: connection.distance,
-          time: connection.time,
-          emission: emission,
-          geometry: connection.geometry
-        });
+      // Add all connections to the graph
+      connections.forEach(connection => {
+        const fromLocation = locations.find(loc => loc.id === connection.from_location_id);
+        const toLocation = locations.find(loc => loc.id === connection.to_location_id);
+        
+        if (fromLocation && toLocation) {
+          const emission = calculateEmission(connection.distance, connection.transport);
+          
+          // Add edge in both directions
+          graph[fromLocation.name].edges.push({
+            node: toLocation.name,
+            transport: connection.transport,
+            distance: connection.distance,
+            time: connection.time,
+            emission: emission,
+            geometry: connection.geometry
+          });
+
+          graph[toLocation.name].edges.push({
+            node: fromLocation.name,
+            transport: connection.transport,
+            distance: connection.distance,
+            time: connection.time,
+            emission: emission,
+            geometry: connection.geometry
+          });
+        }
+      });
+
+      return graph;
+    } else {
+      // Read from JSON file
+      console.log('Reading graph from JSON file');
+      const filePath = path.join(__dirname, 'graph.json');
+      if (!fs.existsSync(filePath)) {
+        console.error('Graph file not found:', filePath);
+        return null;
       }
-    });
 
-    return graph;
+      const data = fs.readFileSync(filePath);
+      const jsonGraph = JSON.parse(data);
+
+      // Recalculate emissions for all edges
+      for (const node in jsonGraph) {
+        jsonGraph[node].edges = jsonGraph[node].edges.map(edge => ({
+          ...edge,
+          emission: calculateEmission(edge.distance, edge.transport)
+        }));
+      }
+
+      return jsonGraph;
+    }
   } catch (error) {
-    console.error('Error building graph from database:', error);
+    console.error('Error building graph:', error);
     return null;
   }
 };
