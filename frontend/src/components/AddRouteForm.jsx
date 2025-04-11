@@ -5,6 +5,8 @@ import axios from 'axios';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+import AutocompleteInput from './AutocompleteInput';
+
 // Styled components for form layout and styling
 const SearchContainer = styled.div`
   display: flex;
@@ -211,15 +213,19 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
   return (
     // Component JSX structure
     <SearchContainer>
-      <SearchInput
-        placeholder="Origin"
+      <AutocompleteInput 
         value={origin}
         onChange={(e) => setOrigin(e.target.value)}
+        onSelect={(place) => setOrigin(place)}
+        placeholder="Origin"
+        InputComponent={SearchInput}
       />
-      <SearchInput
-        placeholder="Destination"
+      <AutocompleteInput 
         value={destination}
         onChange={(e) => setDestination(e.target.value)}
+        onSelect={(place) => setDestination(place)}
+        placeholder="Destination"
+        InputComponent={SearchInput}
       />
       <WeightContainer>
         <WeightInput
