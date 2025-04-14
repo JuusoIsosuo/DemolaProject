@@ -144,7 +144,7 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
         console.log(`Finding truck route between ${newLocation} and ${existingNode}`);
         console.log(`Coordinates: ${JSON.stringify(newLocationCoords)} -> ${JSON.stringify(existingNodeCoords)}`);
         
-        const result = await findTruckRoute(newLocationCoords, existingNodeCoords, 2000);
+        const result = await findTruckRoute(newLocationCoords, existingNodeCoords, 1000);
         
         if (!result || !Array.isArray(result) || result.length !== 3) {
           console.log(`Invalid result from findTruckRoute:`, result);
@@ -195,7 +195,7 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
 };
 
 // Dijkstra's algorithm for finding the optimal path by costType
-const dijkstra = (graph, start, end, costType) => {
+const dijkstra = (graph, start, end, costType, allowedTransports = ['truck', 'rail', 'sea', 'air']) => {
   const pq = new Map();  // Priority queue
   const costs = {};      // Cost tracker
   const prev = {};       // Previous node tracker
@@ -216,6 +216,11 @@ const dijkstra = (graph, start, end, costType) => {
 
     // Update the costs and priority queue
     graph[currentNode].edges.forEach(({ node, [costType]: cost, geometry, transport, distance, emission, time }) => {
+      // Skip edges with transport modes not in the allowed list
+      if (!allowedTransports.includes(transport)) {
+        return;
+      }
+      
       const newCost = currentCost + cost;
       if (newCost < costs[node]) {
         costs[node] = newCost;
@@ -257,8 +262,65 @@ const dijkstra = (graph, start, end, costType) => {
 };
 
 // Main function to find optimal routes
-const findBestRoutes = async (start, end, startCoords, endCoords) => {
+const findBestRoutes = async (start, end, startCoords, endCoords, useSea = true, useAir = true, useRail = true) => {
   let graph = await readGraph();
+  
+  // Determine which transport modes to use
+  const allowedTransports = ['truck']; // Truck is always included
+  if (useSea === true) allowedTransports.push('sea');
+  if (useAir === true) allowedTransports.push('air');
+  if (useRail === true) allowedTransports.push('rail');
+  
+  console.log('Allowed transports:', allowedTransports);
+
+  // If no additional transport modes are selected, just calculate direct truck route
+  if (allowedTransports.length === 1) {
+    console.log('No additional transport modes selected, calculating direct truck route');
+    try {
+      const [distance, time, geometry] = await findTruckRoute(startCoords, endCoords, 100000);
+      
+      if (!distance || !time || !geometry) {
+        console.log('Could not find direct truck route');
+        return {
+          fastest: null,
+          lowestEmission: null
+        };
+      }
+      
+      const emission = calculateEmission(distance, 'truck');
+      
+      const directRoute = {
+        path: [start, end],
+        totalDistance: distance,
+        totalEmission: emission,
+        totalTime: time,
+        geojson: {
+          type: "FeatureCollection",
+          features: [{
+            type: "Feature",
+            geometry: geometry,
+            properties: {
+              transport: "truck",
+              distance: distance,
+              emission: emission,
+              time: time,
+            }
+          }]
+        }
+      };
+      
+      return {
+        fastest: directRoute,
+        lowestEmission: directRoute
+      };
+    } catch (error) {
+      console.error('Error calculating direct truck route:', error);
+      return {
+        fastest: null,
+        lowestEmission: null
+      };
+    }
+  }
 
   // Add start and end locations to the graph if they are not already there
   if (!graph[start]) {
@@ -270,9 +332,9 @@ const findBestRoutes = async (start, end, startCoords, endCoords) => {
     graph = await addLocationToGraph(graph, end, endCoords);
   }
 
-  // Find the best routes
-  const fastestRoute = dijkstra(graph, start, end, "time");
-  const lowestEmissionRoute = dijkstra(graph, start, end, "emission");
+  // Find the best routes with the allowed transport modes
+  const fastestRoute = dijkstra(graph, start, end, "time", allowedTransports);
+  const lowestEmissionRoute = dijkstra(graph, start, end, "emission", allowedTransports);
 
   return {
     fastest: fastestRoute,
