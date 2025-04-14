@@ -133,8 +133,8 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       
       const newRoute = {
         id: Date.now().toString(),
-        origin: origin.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ').trim(),
-        destination: destination.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ').trim(),
+        origin: origin,
+        destination: destination,
         weight: `${weight}${weightUnit}`,
         routeData: response.data,
         cost: totalCost
