@@ -109,9 +109,9 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       }
 
       // !!! Set according to selected routes !!!
-      const useSea = false;
-      const useAir = false;
-      const useRail = false;
+      const useSea = true;
+      const useAir = true;
+      const useRail = true;
 
       setIsLoading(true);
       const response = await axios.get(
