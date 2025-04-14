@@ -106,9 +106,14 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         throw new Error("Could not get coordinates for origin or destination");
       }
 
+      // !!! Set according to selected routes !!!
+      const useSea = false;
+      const useAir = false;
+      const useRail = false;
+
       setIsLoading(true);
       const response = await axios.get(
-        `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}`
+        `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}`
       );
 
       let totalCost = 0;
