@@ -8,6 +8,7 @@ import autoTable from "jspdf-autotable";
 // Styled components for form layout and styling
 const SearchContainer = styled.div`
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid #e2e8f0;
@@ -67,8 +68,50 @@ const AddButton = styled.button`
   }
 `;
 
+const AdvancedSettingsButton = styled(AddButton)`
+  margin-left: auto;
+`;
+
 const DownloadButton = styled(AddButton)`
   margin-left: auto;
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+`;
+
+const DateInput = styled.input`
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+  width: 10%;
+`;
+
+const DateLabel = styled.label`
+  margin-right: 10px;
+  font-size: 0.875rem;
+  font-weight: bold;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+`;
+
+const CheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 1rem;
+`;
+
+const CheckboxLabel = styled.label`
+  font-size: 0.875rem;
+  margin-left: 8px;
+  font-weight: normal;
 `;
 
 // AddRouteForm component handles adding new routes and generating PDF reports
@@ -78,6 +121,12 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
   const [destination, setDestination] = React.useState('');
   const [weight, setWeight] = React.useState('');
   const [weightUnit, setWeightUnit] = React.useState('t');
+  const [isAdvanced, setAdvancedSettings] = React.useState(false);
+  const [additionalNotes, setAdditionalNotes] = React.useState('');
+  const [selectedDate, setSelectedDate] = React.useState('');
+  const [isFragile, setFragile] = React.useState(false); // Checkbox state
+  const [isContinuousDelivery, setIsContinuousDelivery] = React.useState(false);
+
 
   // Get coordinates from Mapbox API for a given address
   const getCoordinates = async (address) => {
@@ -97,7 +146,7 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
   // Handle adding a new route with calculations for costs
   const handleAddRoute = async () => {
     if (!origin || !destination || !weight) return;
-    
+
     try {
       const originCoords = await getCoordinates(origin);
       const destCoords = await getCoordinates(destination);
@@ -113,7 +162,7 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
 
       let totalCost = 0;
       const weightInTonnes = weightUnit === 'kg' ? parseFloat(weight) / 1000 : parseFloat(weight);
-      
+
       const costPerTonneKm = {
         truck: 0.115,
         rail: 0.017,
@@ -128,7 +177,7 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         const segmentCost = distanceKm * weightInTonnes * costRate;
         totalCost += segmentCost;
       });
-      
+
       const newRoute = {
         id: Date.now().toString(),
         origin: origin.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ').trim(),
@@ -153,6 +202,10 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
     }
   };
 
+  const handleAdvancedSettings = () => {
+    setAdvancedSettings(prev => !prev);
+  };
+
   // Generate and download PDF report for routes
   const handleDownloadPDF = () => {
     const doc = new jsPDF();
@@ -172,7 +225,7 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
     const totals = routes
       .filter(route => selectedRoutes.has(route.id))
       .reduce((sum, route) => {
-        const weightInKg = route.weight.includes('kg') 
+        const weightInKg = route.weight.includes('kg')
           ? parseFloat(route.weight)
           : parseFloat(route.weight) * 1000;
         const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
@@ -190,7 +243,7 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       totals.emissions.toFixed(2),
       totals.cost.toFixed(2)
     ]);
-  
+
     autoTable(doc, {
       head: headers,
       body: rows,
@@ -204,12 +257,11 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         }
       }
     });
-    
+
     doc.save("routes_summary.pdf");
   };
 
   return (
-    // Component JSX structure
     <SearchContainer>
       <SearchInput
         placeholder="Origin"
@@ -236,12 +288,106 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
           <option value="kg">kg</option>
         </UnitSelect>
       </WeightContainer>
-      <AddButton 
+      <AddButton
         onClick={handleAddRoute}
         disabled={isLoading || !origin || !destination || !weight}
       >
         {isLoading ? <PulseLoader color="white" size={8} speedMultiplier={0.75}/> : 'Add Route'}
       </AddButton>
+
+
+
+      <AdvancedSettingsButton
+        onClick={handleAdvancedSettings}
+        disabled={isLoading || !origin || !destination || !weight}
+      >
+        {isAdvanced ? "Advanced Settings >" : "Advanced Settings <"}
+      </AdvancedSettingsButton>
+
+      {/* Advanced Settings Panel */}
+      {isAdvanced && (
+        <div style={{
+          marginTop: '10px',
+          width: '100%',
+          backgroundColor: '#f7fafc',
+          padding: '1rem',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+        }}>
+          <h2 className="text-lg font-semibold">Advanced Settings</h2>
+
+          {/* Date of Arrival Section */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginBottom: '10px'
+          }}>
+            <DateInput
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
+            <label htmlFor="dateInput" style={{ whiteSpace: 'nowrap' }}>Date of Arrival</label>
+          </div>
+
+          {/* Fragile Cargo Checkbox */}
+          <div style={{ marginBottom: '10px' }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={isFragile}
+                onChange={(e) => setFragile(e.target.checked)}
+              />
+              Fragile cargo
+            </label>
+          </div>
+
+          {/* Continuous Delivery Checkbox */}
+          <div style={{ marginBottom: '10px' }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={isContinuousDelivery}
+                onChange={(e) => setIsContinuousDelivery(e.target.checked)}
+              />
+              Continuous Delivery
+            </label>
+          </div>
+
+          {/* Conditional Panel for Continuous Delivery Settings */}
+          {isContinuousDelivery && (
+            <div style={{
+              marginTop: '10px',
+              padding: '1rem',
+              backgroundColor: '#edf2f7',
+              borderRadius: '8px',
+              border: '1px dashed #cbd5e0'
+            }}>
+              <h3 style={{ marginBottom: '1rem', fontWeight: 'bold' }}>Continuous Delivery</h3>
+              <div style={{ display: 'flex', gap: '30px', marginBottom: '0.5rem' }}>
+                <label style={{ fontSize: '0.875rem' }}>
+                  Frequency:
+                  <select style={{ marginLeft: '10px', padding: '0.25rem' }}>
+                    <option>Daily</option>
+                    <option>Weekly</option>
+                    <option>Monthly</option>
+                  </select>
+                </label>
+                <label style={{ fontSize: '0.875rem' }}>
+                  Start Date:
+                  <input type="Date" style={{ marginLeft: '10px', padding: '0.25rem' }} />
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+
+
+
       <DownloadButton 
         onClick={handleDownloadPDF}
         disabled={isLoading || !routes || routes.length === 0}
