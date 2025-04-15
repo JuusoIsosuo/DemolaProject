@@ -28,13 +28,41 @@ const RouteDetailsTable = styled.div`
 `;
 
 const TableHeader = styled.div`
-  font-weight: 600;
-  color: #374151;
+  background-color: #f3f4f6;
   padding: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 500;
+  color: #374151;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const Checkbox = styled.input`
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background-color: white;
+  transition: all 0.2s;
+
+  &:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 0.75rem;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
 `;
 
 const TableCell = styled.div`
@@ -618,7 +646,14 @@ const RouteDetails = ({
         <TableHeader>CO₂/t</TableHeader>
         <TableHeader>€</TableHeader>
         <TableHeader>€/t</TableHeader>
-        <TableHeader>Actions</TableHeader>
+        <TableHeader>
+          <Checkbox
+            type="checkbox"
+            checked={selectedRoutes.size === routes.length}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+          />
+          Actions
+        </TableHeader>
 
         {sortedRoutes.map((route) => {
           const weightInKg = route.weight.includes('kg')
