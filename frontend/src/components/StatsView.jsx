@@ -133,37 +133,37 @@ const StatsView = ({ routes, selectedRoutes }) => {
       };
     }, { emissions: 0, cost: 0 });
 
-  // Prepare data for emissions per tonne chart
-  const emissionsChartData = routes
-    .filter(route => selectedRoutes.has(route.id))
-    .map(route => {
-      const weightInTonnes = route.weight.includes('kg') 
-        ? parseFloat(route.weight) / 1000 
-        : parseFloat(route.weight);
-      const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
-      const totalEmission = emissionPerKg * (weightInTonnes * 1000);
-      const emissionPerTonne = totalEmission / weightInTonnes;
-      return {
-        name: `${route.origin} to ${route.destination}`,
-        value: emissionPerTonne
-      };
-    })
-    .filter(item => item.value > 0);
+  const prepareChartData = () => {
+    const selectedRoutesList = Array.from(selectedRoutes);
+    const filteredRoutes = routes.filter(route => selectedRoutesList.includes(route.id));
 
-  // Prepare data for cost per tonne chart
-  const costChartData = routes
-    .filter(route => selectedRoutes.has(route.id))
-    .map(route => {
-      const weightInTonnes = route.weight.includes('kg') 
-        ? parseFloat(route.weight) / 1000 
+    const emissionsData = filteredRoutes.map(route => {
+      const weightInKg = route.weight.includes('kg')
+        ? parseFloat(route.weight)
+        : parseFloat(route.weight) * 1000;
+      const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+      const totalEmission = emissionPerKg * weightInKg;
+      return {
+        name: route.name || `${route.origin} to ${route.destination}`,
+        value: totalEmission
+      };
+    });
+
+    const costData = filteredRoutes.map(route => {
+      const weightInTonnes = route.weight.includes('kg')
+        ? parseFloat(route.weight) / 1000
         : parseFloat(route.weight);
       const costPerTonne = (route.cost || 0) / weightInTonnes;
       return {
-        name: `${route.origin} to ${route.destination}`,
+        name: route.name || `${route.origin} to ${route.destination}`,
         value: costPerTonne
       };
-    })
-    .filter(item => item.value > 0);
+    });
+
+    return { emissionsData, costData };
+  };
+
+  const { emissionsData, costData } = prepareChartData();
 
   return (
     // Component JSX structure
@@ -183,11 +183,11 @@ const StatsView = ({ routes, selectedRoutes }) => {
         <ChartWrapper>
           <div style={{ flex: 2 }}>
             <ChartTitle>Emissions per Tonne Distribution</ChartTitle>
-            {emissionsChartData.length > 0 ? (
+            {emissionsData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={emissionsChartData}
+                    data={emissionsData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -195,7 +195,7 @@ const StatsView = ({ routes, selectedRoutes }) => {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {emissionsChartData.map((entry, index) => (
+                    {emissionsData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={COLORS[index % COLORS.length]}
@@ -214,7 +214,7 @@ const StatsView = ({ routes, selectedRoutes }) => {
             )}
           </div>
           <ChartDataList>
-            {emissionsChartData.map((entry, index) => (
+            {emissionsData.map((entry, index) => (
               <ChartDataItem 
                 key={index}
                 color={COLORS[index % COLORS.length]}
@@ -229,11 +229,11 @@ const StatsView = ({ routes, selectedRoutes }) => {
         <ChartWrapper>
           <div style={{ flex: 2 }}>
             <ChartTitle>Cost per Tonne Distribution</ChartTitle>
-            {costChartData.length > 0 ? (
+            {costData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={costChartData}
+                    data={costData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -241,7 +241,7 @@ const StatsView = ({ routes, selectedRoutes }) => {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {costChartData.map((entry, index) => (
+                    {costData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={COLORS[index % COLORS.length]}
@@ -260,7 +260,7 @@ const StatsView = ({ routes, selectedRoutes }) => {
             )}
           </div>
           <ChartDataList>
-            {costChartData.map((entry, index) => (
+            {costData.map((entry, index) => (
               <ChartDataItem 
                 key={index}
                 color={COLORS[index % COLORS.length]}

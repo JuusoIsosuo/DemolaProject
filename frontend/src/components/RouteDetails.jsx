@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
+import axios from 'axios';
 
 // Styled components for layout and styling
 const Container = styled.div`
@@ -16,34 +17,272 @@ const Title = styled.div`
   margin-bottom: 1rem;
 `;
 
-const Table = styled.div`
+const RouteDetailsTable = styled.div`
   display: grid;
   grid-template-columns: 1.5fr 0.8fr 1fr 0.8fr 0.8fr 0.8fr 0.5fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+`;
+
+const TableHeader = styled.div`
+  font-weight: 600;
+  color: #374151;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+const TableCell = styled.div`
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
+`;
   
-  > div {
+const ActionButton = styled.button`
     padding: 0.5rem;
-    border-bottom: 1px solid #e2e8f0;
-    color: #64748b;
-    font-size: 0.875rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+    color: #ef4444;
   }
 
-  > div:nth-of-type(-n+7) {
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+`;
+
+const ModifyButton = styled.button`
+  padding: 0.5rem 1rem;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  color: #374151;
+  font-size: 0.75rem;
     font-weight: 500;
-    color: #1e293b;
     cursor: pointer;
+  transition: all 0.2s;
     
     &:hover {
-      color: #2563eb;
+    background: #e5e7eb;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+`;
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+`;
+
+const AdvancedSettingsModal = styled.div`
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
+  animation: modalSlideIn 0.3s ease-out;
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -60%);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%);
     }
   }
 `;
 
-const ActionButton = styled.button`
+const ModalTitle = styled.h3`
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+`;
+
+const ModalSection = styled.div`
+  margin-bottom: 1.5rem;
+`;
+
+const ModalLabel = styled.label`
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+`;
+
+const ModalInput = styled.input`
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background: #f9fafb;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: white;
+  }
+`;
+
+const ModalWeightContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
+const ModalWeightInput = styled(ModalInput)`
+  width: 120px;
+`;
+
+const ModalUnitSelect = styled.select`
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  width: 60px;
+  background: #f9fafb;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.25em;
+  padding-right: 2rem;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+  }
+`;
+
+const ModalButtonGroup = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+`;
+
+const ModalButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  }
+`;
+
+const CancelButton = styled(ModalButton)`
+  background: #f3f4f6;
+  color: #374151;
+
+  &:hover {
+    background: #e5e7eb;
+  }
+`;
+
+const SaveButton = styled(ModalButton)`
+  background: #3b82f6;
+  color: white;
+
+  &:hover {
+    background: #2563eb;
+  }
+`;
+
+const TransportTypeContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 1rem;
+`;
+
+const TransportButton = styled.button`
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: ${props => props.selected ? '#2563eb' : 'white'};
+  color: ${props => props.selected ? 'white' : '#2563eb'};
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: ${props => props.selected ? '#1d4ed8' : '#f8fafc'};
+  }
+`;
+
+const WeightInput = styled.input`
   padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  width: 100px;
+  margin-right: 0.5rem;
+`;
+
+const UnitSelect = styled.select`
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: white;
+`;
+
+const WeightContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+
+const MapIconButton = styled.button`
+  padding: 0.25rem;
   background-color: transparent;
   border: none;
   cursor: pointer;
@@ -51,10 +290,78 @@ const ActionButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.25rem;
 
   &:hover {
     color: #1d4ed8;
   }
+`;
+
+const ActionsHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: default;
+  padding-left: 1rem;
+`;
+
+const ActionsContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const FormCheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const FormCheckbox = styled.input`
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  cursor: pointer;
+`;
+
+const FormCheckboxLabel = styled.label`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+`;
+
+const FrequencySelect = styled.select`
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  width: 100px;
+  background: #f9fafb;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.25em;
+  padding-right: 2rem;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+  }
+`;
+
+const DateRangeContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 1.5rem;
 `;
 
 // RouteDetails component displays a sortable table of routes with their details
@@ -67,6 +374,25 @@ const RouteDetails = ({
   // State for sorting functionality
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
+  const [selectedRouteForModification, setSelectedRouteForModification] = useState(null);
+  const [selectedTransportTypes, setSelectedTransportTypes] = useState(['truck']);
+  const [modifiedWeight, setModifiedWeight] = useState('');
+  const [modifiedWeightUnit, setModifiedWeightUnit] = useState('t');
+  const [modifiedRouteName, setModifiedRouteName] = useState('');
+  const [modifiedFragile, setModifiedFragile] = useState(false);
+  const [modifiedContinuousDelivery, setModifiedContinuousDelivery] = useState(false);
+  const [modifiedDeliveryDate, setModifiedDeliveryDate] = useState('');
+  const [modifiedFrequency, setModifiedFrequency] = useState('weekly');
+  const [modifiedStartDate, setModifiedStartDate] = useState('');
+  const [modifiedEndDate, setModifiedEndDate] = useState('');
+
+  const transportTypes = [
+    { id: 'all', label: 'All' },
+    { id: 'truck', label: 'Truck' },
+    { id: 'rail', label: 'Rail' },
+    { id: 'sea', label: 'Sea' },
+    { id: 'air', label: 'Air' }
+  ];
 
   const handleDeleteRoute = (routeId) => {
     setRoutes(routes.filter(route => route.id !== routeId));
@@ -106,6 +432,129 @@ const RouteDetails = ({
     } else {
       setSortField(field);
       setSortDirection('asc');
+    }
+  };
+
+  const getCoordinates = async (address) => {
+    try {
+      const response = await axios.get(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${import.meta.env.VITE_API_TOKEN}`
+      );
+      if (response.data.features && response.data.features.length > 0) {
+        return response.data.features[0].center;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error getting coordinates:", error);
+      return null;
+    }
+  };
+
+  const handleModifyClick = (route) => {
+    setSelectedRouteForModification(route);
+    // Set initial transport types based on route data
+    const types = ['truck'];
+    if (route.routeData?.useRail) types.push('rail');
+    if (route.routeData?.useSea) types.push('sea');
+    if (route.routeData?.useAir) types.push('air');
+    setSelectedTransportTypes(types);
+
+    // Set initial weight values
+    const weightValue = route.weight.replace(/[^0-9.]/g, '');
+    const weightUnit = route.weight.includes('kg') ? 'kg' : 't';
+    setModifiedWeight(weightValue);
+    setModifiedWeightUnit(weightUnit);
+    setModifiedRouteName(route.name || `${route.origin} to ${route.destination}`);
+    setModifiedFragile(route.isFragile || false);
+    setModifiedContinuousDelivery(route.isContinuousDelivery || false);
+    setModifiedDeliveryDate(route.deliveryDate || '');
+    setModifiedFrequency(route.frequency || 'weekly');
+    setModifiedStartDate(route.startDate || '');
+    setModifiedEndDate(route.endDate || '');
+  };
+
+  const handleCloseModal = () => {
+    setSelectedRouteForModification(null);
+  };
+
+  const handleTransportTypeClick = (typeId) => {
+    if (typeId === 'truck') return; // Truck is always selected
+
+    if (typeId === 'all') {
+      setSelectedTransportTypes(['truck', 'rail', 'sea', 'air']);
+      return;
+    }
+
+    const newTypes = selectedTransportTypes.includes(typeId)
+      ? selectedTransportTypes.filter(t => t !== typeId)
+      : [...selectedTransportTypes, typeId];
+
+    setSelectedTransportTypes(newTypes);
+  };
+
+  const handleSaveChanges = async () => {
+    if (!selectedRouteForModification) return;
+
+    try {
+      const originCoords = await getCoordinates(selectedRouteForModification.origin);
+      const destCoords = await getCoordinates(selectedRouteForModification.destination);
+
+      if (!originCoords || !destCoords) {
+        throw new Error("Could not get coordinates for origin or destination");
+      }
+
+      const useSea = selectedTransportTypes.includes('sea');
+      const useAir = selectedTransportTypes.includes('air');
+      const useRail = selectedTransportTypes.includes('rail');
+
+      // Calculate weight in tonnes for the API
+      const weightInTonnes = modifiedWeightUnit === 'kg' 
+        ? parseFloat(modifiedWeight) / 1000 
+        : parseFloat(modifiedWeight);
+
+      const response = await axios.get(
+        `http://localhost:3000/routes?origin=${selectedRouteForModification.origin}&destination=${selectedRouteForModification.destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}`
+      );
+
+      // Calculate total cost based on distance and weight
+      let totalCost = 0;
+      const costPerTonneKm = {
+        truck: 0.115,
+        rail: 0.017,
+        sea: 0.0013,
+        air: 0.18
+      };
+
+      response.data.lowestEmission.geojson.features.forEach(feature => {
+        const distanceKm = feature.properties.distance;
+        const transport = feature.properties.transport.toLowerCase();
+        const costRate = costPerTonneKm[transport] || costPerTonneKm.truck;
+        const segmentCost = distanceKm * weightInTonnes * costRate;
+        totalCost += segmentCost;
+      });
+
+      const updatedRoute = {
+        ...selectedRouteForModification,
+        routeData: response.data,
+        cost: totalCost,
+        weight: `${modifiedWeight}${modifiedWeightUnit}`,
+        name: modifiedRouteName,
+        isFragile: modifiedFragile,
+        isContinuousDelivery: modifiedContinuousDelivery,
+        deliveryDate: modifiedDeliveryDate,
+        frequency: modifiedFrequency,
+        startDate: modifiedStartDate,
+        endDate: modifiedEndDate
+      };
+
+      setRoutes(routes.map(route => 
+        route.id === selectedRouteForModification.id ? updatedRoute : route
+      ));
+
+      handleCloseModal();
+    } catch (error) {
+      console.error("Error updating route:", error);
+      alert("Error updating route. Please try again.");
     }
   };
 
@@ -162,33 +611,14 @@ const RouteDetails = ({
     // Component JSX structure
     <Container>
       <Title>Route Details</Title>
-      <Table>
-        <div onClick={() => handleSort('route')}>
-          Route {sortField === 'route' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </div>
-        <div onClick={() => handleSort('weight')}>
-          Weight {sortField === 'weight' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </div>
-        <div onClick={() => handleSort('emissions')}>
-          CO₂ (kg) {sortField === 'emissions' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </div>
-        <div onClick={() => handleSort('emissionsPerTonne')}>
-          CO₂/t {sortField === 'emissionsPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </div>
-        <div onClick={() => handleSort('cost')}>
-          € {sortField === 'cost' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </div>
-        <div onClick={() => handleSort('costPerTonne')}>
-          €/t {sortField === 'costPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'default' }}>
-          <input
-            type="checkbox"
-            checked={selectedRoutes.size === routes.length && routes.length > 0}
-            onChange={(e) => handleSelectAll(e.target.checked)}
-          />
-          <span>Actions</span>
-        </div>
+      <RouteDetailsTable>
+        <TableHeader>Route</TableHeader>
+        <TableHeader>Weight</TableHeader>
+        <TableHeader>CO₂</TableHeader>
+        <TableHeader>CO₂/t</TableHeader>
+        <TableHeader>€</TableHeader>
+        <TableHeader>€/t</TableHeader>
+        <TableHeader>Actions</TableHeader>
 
         {sortedRoutes.map((route) => {
           const weightInKg = route.weight.includes('kg')
@@ -204,20 +634,29 @@ const RouteDetails = ({
 
           return (
             <React.Fragment key={route.id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                {`${route.origin} to ${route.destination}`}
-              </div>
-              <div>{route.weight}</div>
-              <div>{totalEmission.toFixed(2)}</div>
-              <div>{emissionPerTonne.toFixed(2)}</div>
-              <div>{(route.cost || 0).toFixed(2)}</div>
-              <div>{costPerTonne.toFixed(2)}</div>
+              <TableCell>{route.name || `${route.origin} to ${route.destination}`}</TableCell>
+              <TableCell>{route.weight}</TableCell>
+              <TableCell>{totalEmission.toFixed(2)}</TableCell>
+              <TableCell>{emissionPerTonne.toFixed(2)}</TableCell>
+              <TableCell>{(route.cost || 0).toFixed(2)}</TableCell>
+              <TableCell>{costPerTonne.toFixed(2)}</TableCell>
+              <TableCell>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input
                   type="checkbox"
                   checked={selectedRoutes.has(route.id)}
                   onChange={() => handleRouteToggle(route.id)}
-                />
+                    style={{
+                      width: '1rem',
+                      height: '1rem',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <ModifyButton onClick={() => handleModifyClick(route)}>
+                    Modify
+                  </ModifyButton>
                 <ActionButton 
                   title="Delete"
                   onClick={() => handleDeleteRoute(route.id)}
@@ -225,10 +664,151 @@ const RouteDetails = ({
                   🗑️
                 </ActionButton>
               </div>
+              </TableCell>
             </React.Fragment>
           );
         })}
-      </Table>
+      </RouteDetailsTable>
+
+      {selectedRouteForModification && (
+        <>
+          <ModalOverlay onClick={handleCloseModal} />
+          <AdvancedSettingsModal>
+            <ModalTitle>Modify Route</ModalTitle>
+            
+            <ModalSection>
+              <ModalLabel>Route Name</ModalLabel>
+              <ModalInput
+                type="text"
+                value={modifiedRouteName}
+                onChange={(e) => setModifiedRouteName(e.target.value)}
+                placeholder="Enter route name"
+                style={{ width: '300px' }}
+              />
+            </ModalSection>
+
+            <ModalSection>
+              <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+                <strong>Route:</strong> {selectedRouteForModification.origin} → {selectedRouteForModification.destination}
+              </p>
+            </ModalSection>
+
+            <ModalSection>
+              <ModalLabel>Weight</ModalLabel>
+              <ModalWeightContainer>
+                <ModalWeightInput
+                  type="number"
+                  value={modifiedWeight}
+                  onChange={(e) => setModifiedWeight(e.target.value)}
+                  placeholder="Weight"
+                />
+                <ModalUnitSelect
+                  value={modifiedWeightUnit}
+                  onChange={(e) => setModifiedWeightUnit(e.target.value)}
+                >
+                  <option value="t">t</option>
+                  <option value="kg">kg</option>
+                </ModalUnitSelect>
+              </ModalWeightContainer>
+            </ModalSection>
+
+            <ModalSection>
+              <ModalLabel>Delivery Date</ModalLabel>
+              <ModalInput
+                type="date"
+                value={modifiedDeliveryDate}
+                onChange={(e) => setModifiedDeliveryDate(e.target.value)}
+                style={{ width: '200px' }}
+              />
+            </ModalSection>
+
+            <ModalSection>
+              <FormCheckboxContainer>
+                <FormCheckbox
+                  type="checkbox"
+                  checked={modifiedContinuousDelivery}
+                  onChange={(e) => setModifiedContinuousDelivery(e.target.checked)}
+                  id="modify-continuous-delivery"
+                />
+                <FormCheckboxLabel htmlFor="modify-continuous-delivery">
+                  Continuous Delivery
+                </FormCheckboxLabel>
+              </FormCheckboxContainer>
+
+              {modifiedContinuousDelivery && (
+                <>
+                  <FormGroup>
+                    <ModalLabel>Frequency</ModalLabel>
+                    <FrequencySelect
+                      value={modifiedFrequency}
+                      onChange={(e) => setModifiedFrequency(e.target.value)}
+                    >
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Bi-weekly</option>
+                      <option value="monthly">Monthly</option>
+                    </FrequencySelect>
+                  </FormGroup>
+
+                  <FormGroup>
+                    <ModalLabel>Date Range</ModalLabel>
+                    <DateRangeContainer>
+                      <ModalInput
+                        type="date"
+                        value={modifiedStartDate}
+                        onChange={(e) => setModifiedStartDate(e.target.value)}
+                        placeholder="Start Date"
+                        style={{ width: '150px' }}
+                      />
+                      <ModalInput
+                        type="date"
+                        value={modifiedEndDate}
+                        onChange={(e) => setModifiedEndDate(e.target.value)}
+                        placeholder="End Date"
+                        style={{ width: '150px' }}
+                      />
+                    </DateRangeContainer>
+                  </FormGroup>
+                </>
+              )}
+
+              <FormCheckboxContainer>
+                <FormCheckbox
+                  type="checkbox"
+                  checked={modifiedFragile}
+                  onChange={(e) => setModifiedFragile(e.target.checked)}
+                  id="modify-fragile"
+                />
+                <FormCheckboxLabel htmlFor="modify-fragile">
+                  Fragile
+                </FormCheckboxLabel>
+              </FormCheckboxContainer>
+            </ModalSection>
+
+            <ModalSection>
+              <ModalLabel>Transport Types</ModalLabel>
+              <TransportTypeContainer>
+                {transportTypes.map(type => (
+                  <TransportButton
+                    key={type.id}
+                    selected={type.id === 'all' 
+                      ? selectedTransportTypes.length === 4 
+                      : selectedTransportTypes.includes(type.id)}
+                    onClick={() => handleTransportTypeClick(type.id)}
+                  >
+                    {type.label}
+                  </TransportButton>
+                ))}
+              </TransportTypeContainer>
+            </ModalSection>
+
+            <ModalButtonGroup>
+              <CancelButton onClick={handleCloseModal}>Cancel</CancelButton>
+              <SaveButton onClick={handleSaveChanges}>Save Changes</SaveButton>
+            </ModalButtonGroup>
+          </AdvancedSettingsModal>
+        </>
+      )}
     </Container>
   );
 };
