@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
+import RouteInfoPopup from './RouteInfoPopup';
 
 // Styled components for layout and styling
 const Container = styled.div`
@@ -57,6 +58,11 @@ const ActionButton = styled.button`
   }
 `;
 
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
 // RouteDetails component displays a sortable table of routes with their details
 const RouteDetails = ({
   routes,
@@ -67,6 +73,7 @@ const RouteDetails = ({
   // State for sorting functionality
   const [sortField, setSortField] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
+  const [selectedRouteInfo, setSelectedRouteInfo] = useState(null);
 
   const handleDeleteRoute = (routeId) => {
     setRoutes(routes.filter(route => route.id !== routeId));
@@ -75,6 +82,11 @@ const RouteDetails = ({
       next.delete(routeId);
       return next;
     });
+  };
+
+  // Add this function to handle info button click
+  const handleInfoClick = (route) => {
+    setSelectedRouteInfo(route);
   };
 
   // Handle selection of individual routes
@@ -218,17 +230,29 @@ const RouteDetails = ({
                   checked={selectedRoutes.has(route.id)}
                   onChange={() => handleRouteToggle(route.id)}
                 />
-                <ActionButton 
-                  title="Delete"
-                  onClick={() => handleDeleteRoute(route.id)}
-                >
-                  🗑️
-                </ActionButton>
+                <ActionButtons>
+                  <ActionButton onClick={() => handleInfoClick(route)}>
+                    ℹ️
+                  </ActionButton>
+                  <ActionButton 
+                    title="Delete"
+                    onClick={() => handleDeleteRoute(route.id)}
+                  >
+                    🗑️
+                  </ActionButton>
+                </ActionButtons>
               </div>
             </React.Fragment>
           );
         })}
       </Table>
+      
+      {selectedRouteInfo && (
+        <RouteInfoPopup
+          route={selectedRouteInfo}
+          onClose={() => setSelectedRouteInfo(null)}
+        />
+      )}
     </Container>
   );
 };
