@@ -5,6 +5,8 @@ import axios from 'axios';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
+import AutocompleteInput from './AutocompleteInput';
+
 // Styled components for form layout and styling
 const SearchContainer = styled.div`
   display: flex;
@@ -155,9 +157,14 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         throw new Error("Could not get coordinates for origin or destination");
       }
 
+      // !!! Set according to selected routes !!!
+      const useSea = true;
+      const useAir = true;
+      const useRail = true;
+
       setIsLoading(true);
       const response = await axios.get(
-        `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}`
+        `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}`
       );
 
       let totalCost = 0;
@@ -180,8 +187,8 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
 
       const newRoute = {
         id: Date.now().toString(),
-        origin: origin.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ').trim(),
-        destination: destination.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ').trim(),
+        origin: origin,
+        destination: destination,
         weight: `${weight}${weightUnit}`,
         routeData: response.data,
         cost: totalCost
@@ -263,15 +270,19 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
 
   return (
     <SearchContainer>
-      <SearchInput
-        placeholder="Origin"
+      <AutocompleteInput 
         value={origin}
         onChange={(e) => setOrigin(e.target.value)}
+        onSelect={(place) => setOrigin(place)}
+        placeholder="Origin"
+        InputComponent={SearchInput}
       />
-      <SearchInput
-        placeholder="Destination"
+      <AutocompleteInput 
         value={destination}
         onChange={(e) => setDestination(e.target.value)}
+        onSelect={(place) => setDestination(place)}
+        placeholder="Destination"
+        InputComponent={SearchInput}
       />
       <WeightContainer>
         <WeightInput
