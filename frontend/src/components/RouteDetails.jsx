@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import axios from 'axios';
+import RouteInfoPopup from './RouteInfoPopup';
 
 // Styled components for layout and styling
 const Container = styled.div`
@@ -413,6 +414,7 @@ const RouteDetails = ({
   const [modifiedFrequency, setModifiedFrequency] = useState('weekly');
   const [modifiedStartDate, setModifiedStartDate] = useState('');
   const [modifiedEndDate, setModifiedEndDate] = useState('');
+  const [selectedRouteForInfo, setSelectedRouteForInfo] = useState(null);
 
   const transportTypes = [
     { id: 'all', label: 'All' },
@@ -586,6 +588,14 @@ const RouteDetails = ({
     }
   };
 
+  const handleInfoClick = (route) => {
+    setSelectedRouteForInfo(route);
+  };
+
+  const handleCloseInfo = () => {
+    setSelectedRouteForInfo(null);
+  };
+
   // Sort routes based on selected field and direction
   const sortedRoutes = [...routes].sort((a, b) => {
     if (!sortField) return 0;
@@ -676,34 +686,40 @@ const RouteDetails = ({
               <TableCell>{(route.cost || 0).toFixed(2)}</TableCell>
               <TableCell>{costPerTonne.toFixed(2)}</TableCell>
               <TableCell>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input
-                  type="checkbox"
-                  checked={selectedRoutes.has(route.id)}
-                  onChange={() => handleRouteToggle(route.id)}
-                    style={{
-                      width: '1rem',
-                      height: '1rem',
-                      border: '2px solid #d1d5db',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedRoutes.has(route.id)}
+                    onChange={() => handleRouteToggle(route.id)}
                   />
                   <ModifyButton onClick={() => handleModifyClick(route)}>
                     Modify
                   </ModifyButton>
-                <ActionButton 
-                  title="Delete"
-                  onClick={() => handleDeleteRoute(route.id)}
-                >
-                  🗑️
-                </ActionButton>
-              </div>
+                  <ActionButton 
+                    title="Info"
+                    onClick={() => handleInfoClick(route)}
+                  >
+                    ℹ️
+                  </ActionButton>
+                  <ActionButton 
+                    title="Delete"
+                    onClick={() => handleDeleteRoute(route.id)}
+                  >
+                    🗑️
+                  </ActionButton>
+                </div>
               </TableCell>
             </React.Fragment>
           );
         })}
       </RouteDetailsTable>
+
+      {selectedRouteForInfo && (
+        <RouteInfoPopup
+          route={selectedRouteForInfo}
+          onClose={handleCloseInfo}
+        />
+      )}
 
       {selectedRouteForModification && (
         <>
