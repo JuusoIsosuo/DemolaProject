@@ -289,57 +289,6 @@ const TransportButton = styled.button`
   }
 `;
 
-const WeightInput = styled.input`
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  width: 100px;
-  margin-right: 0.5rem;
-`;
-
-const UnitSelect = styled.select`
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  background-color: white;
-`;
-
-const WeightContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-`;
-
-const MapIconButton = styled.button`
-  padding: 0.25rem;
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-  color: #2563eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-
-  &:hover {
-    color: #1d4ed8;
-  }
-`;
-
-const ActionsHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: default;
-  padding-left: 1rem;
-`;
-
-const ActionsContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-`;
-
 const FormCheckboxContainer = styled.div`
   display: flex;
   align-items: center;
