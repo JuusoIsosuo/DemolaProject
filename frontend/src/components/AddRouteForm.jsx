@@ -395,12 +395,6 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
 
       setRoutes(prevRoutes => [...prevRoutes, newRoute]);
       setSelectedRoutes(prev => new Set([...prev, newRoute.id]));
-      setOrigin('');
-      setDestination('');
-      setWeight('');
-      setWeightUnit('t');
-      setRouteName('');
-      setShowAdvancedSettings(false);
       return true;
     } catch (error) {
       console.error("Error adding route:", error);

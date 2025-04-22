@@ -73,6 +73,11 @@ const readGraph = async (useDatabase = true) => {
         const toLocation = locations.find(loc => loc.id === connection.to_location_id);
         
         if (fromLocation && toLocation) {
+          if (fromLocation.name === "Shanghai" || toLocation.name === "Shanghai") {
+            console.log(`Skipping connection involving Shanghai: ${fromLocation.name} → ${toLocation.name}`);
+
+            return;
+          }
           const emission = calculateEmission(connection.distance, connection.transport);
           
           // Add edge in both directions
