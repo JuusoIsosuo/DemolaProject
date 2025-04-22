@@ -73,6 +73,11 @@ const readGraph = async (useDatabase = true) => {
         const toLocation = locations.find(loc => loc.id === connection.to_location_id);
         
         if (fromLocation && toLocation) {
+          if (fromLocation.name === "Shanghai" || toLocation.name === "Shanghai") {
+            console.log(`Skipping connection involving Shanghai: ${fromLocation.name} → ${toLocation.name}`);
+
+            return;
+          }
           const emission = calculateEmission(connection.distance, connection.transport);
           
           // Add edge in both directions
@@ -322,6 +327,100 @@ const findBestRoutes = async (start, end, startCoords, endCoords, useSea = true,
     }
   }
 
+  // Apufunktio: haetaan suurin arvo tietylle kustannustyypille
+const getGlobalMaxValues = (graph, allowedTransports) => {
+  let maxEmission = 0;
+  let maxTime = 0;
+
+  for (const node in graph) {
+    graph[node].edges.forEach(edge => {
+      if (!allowedTransports.includes(edge.transport)) return;
+      if (edge.emission > maxEmission) maxEmission = edge.emission;
+      if (edge.time > maxTime) maxTime = edge.time;
+    });
+  }
+
+  return { maxEmission, maxTime };
+};
+
+// Itse algoritmi
+const dijkstraBalanced = (graph, start, end, allowedTransports = ['truck', 'rail', 'sea', 'air']) => {
+  const { maxEmission, maxTime } = getGlobalMaxValues(graph, allowedTransports);
+
+  const pq = new Map();  // Priority queue
+  const costs = {};      // Cost tracker
+  const prev = {};       // Previous node tracker
+  const pathGeometry = {}; // Track geometry for the path
+
+  Object.keys(graph).forEach(node => costs[node] = Infinity);
+  costs[start] = 0;
+  pq.set(start, 0);
+
+  while (pq.size > 0) {
+    const [currentNode, currentCost] = [...pq.entries()].reduce((a, b) => a[1] < b[1] ? a : b);
+    pq.delete(currentNode);
+
+    if (currentNode === end) break;
+
+    graph[currentNode].edges.forEach(({ node, transport, distance, emission, time, geometry }) => {
+      if (!allowedTransports.includes(transport)) return;
+
+      // Normalisoidaan arvo välille [0, 1]
+      const normTime = maxTime > 0 ? time / maxTime : 0;
+      const normEmission = maxEmission > 0 ? emission / maxEmission : 0;
+
+      // Otetaan tasapainotettu keskiarvo
+      const balancedCost = (normTime + normEmission) / 2;
+
+      const newCost = currentCost + balancedCost;
+
+      if (newCost < costs[node]) {
+        costs[node] = newCost;
+        prev[node] = currentNode;
+        pathGeometry[node] = { geometry, transport, distance, emission, time };
+        pq.set(node, newCost);
+      }
+    });
+  }
+
+  // Reitin takaisinrakennus
+  let path = [];
+  let geojsonFeatures = [];
+  let temp = end;
+  while (temp) {
+    path.unshift(temp);
+    if (pathGeometry[temp]) {
+      geojsonFeatures.unshift({
+        type: "Feature",
+        geometry: pathGeometry[temp].geometry,
+        properties: {
+          transport: pathGeometry[temp].transport,
+          distance: pathGeometry[temp].distance,
+          emission: pathGeometry[temp].emission,
+          time: pathGeometry[temp].time,
+        }
+      });
+    }
+    temp = prev[temp];
+  }
+
+  const totalDistance = geojsonFeatures.reduce((sum, f) => sum + f.properties.distance, 0);
+  const totalEmission = geojsonFeatures.reduce((sum, f) => sum + f.properties.emission, 0);
+  const totalTime = geojsonFeatures.reduce((sum, f) => sum + f.properties.time, 0);
+
+  return path.length > 1 ? {
+    path,
+    totalDistance,
+    totalEmission,
+    totalTime,
+    geojson: {
+      type: "FeatureCollection",
+      features: geojsonFeatures
+    }
+  } : null;
+};
+  
+
   // Add start and end locations to the graph if they are not already there
   if (!graph[start]) {
     console.log(`Adding start location ${start} to graph`);
@@ -335,10 +434,14 @@ const findBestRoutes = async (start, end, startCoords, endCoords, useSea = true,
   // Find the best routes with the allowed transport modes
   const fastestRoute = dijkstra(graph, start, end, "time", allowedTransports);
   const lowestEmissionRoute = dijkstra(graph, start, end, "emission", allowedTransports);
+  const balancedRoute = dijkstraBalanced(graph, start, end, allowedTransports);
+
+  console.log('Balanced route:', JSON.stringify(balancedRoute, null, 2));
 
   return {
     fastest: fastestRoute,
-    lowestEmission: lowestEmissionRoute
+    lowestEmission: lowestEmissionRoute,
+    balanced: balancedRoute
   };
 };
 
