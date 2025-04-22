@@ -161,6 +161,13 @@ const RouteInfoPopup = ({ route, onClose }) => {
     }
   };
 
+  const formatEmission = (emission) => {
+    if (emission >= 1000) {
+      return `${(emission / 1000).toFixed(2)} t CO₂e`;
+    }
+    return `${emission.toFixed(2)} kg CO₂e`;
+  };
+
   const getTransportMode = (properties) => {
     if (!properties) return 'unknown';
     
@@ -235,8 +242,10 @@ const RouteInfoPopup = ({ route, onClose }) => {
   emissionsData.sort((a, b) => b.value - a.value);
 
   const emissionTooltipFormatter = (value) => `${value.toFixed(1)}%`;
-  const emissionLegendFormatter = (value, entry) => 
-    `${entry.name} (${(totalEmission * (value/100)).toFixed(2)} kg CO₂e, ${value.toFixed(1)}%)`;
+  const emissionLegendFormatter = (value, entry) => {
+    const segmentEmission = totalEmission * (value/100);
+    return `${entry.name} (${formatEmission(segmentEmission)}, ${value.toFixed(1)}%)`;
+  };
 
   const costData = currentRoute?.geojson?.features?.reduce((acc, feature) => {
     const properties = feature.properties || {};
@@ -290,7 +299,7 @@ const RouteInfoPopup = ({ route, onClose }) => {
             </InfoItem>
             <InfoItem>
               <span>Total Emissions:</span>
-              <span>{totalEmission.toFixed(2)} kg CO₂e</span>
+              <span>{formatEmission(totalEmission)}</span>
             </InfoItem>
             <InfoItem>
               <span>Total Cost:</span>
