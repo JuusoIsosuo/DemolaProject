@@ -54,7 +54,7 @@ const UnitSelect = styled.select`
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background-color: white;
+  background-color: white;
   }
 `;
 
@@ -475,43 +475,43 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       <FormRow>
         <FormGroup>
           <Label>Origin</Label>
-          <AutocompleteInput
-            value={origin}
-            onChange={(e) => setOrigin(e.target.value)}
-            onSelect={(place) => setOrigin(place)}
+      <AutocompleteInput 
+        value={origin}
+        onChange={(e) => setOrigin(e.target.value)}
+        onSelect={(place) => setOrigin(place)}
             placeholder="Enter origin"
             InputComponent={Input}
-          />
+      />
         </FormGroup>
 
         <FormGroup>
           <Label>Destination</Label>
-          <AutocompleteInput
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            onSelect={(place) => setDestination(place)}
+      <AutocompleteInput 
+        value={destination}
+        onChange={(e) => setDestination(e.target.value)}
+        onSelect={(place) => setDestination(place)}
             placeholder="Enter destination"
             InputComponent={Input}
-          />
+      />
         </FormGroup>
 
         <WeightGroup>
           <Label>Weight</Label>
-          <WeightContainer>
-            <WeightInput
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(e.target.value)}
+      <WeightContainer>
+        <WeightInput
+          type="number"
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
               placeholder="Weight"
-            />
-            <UnitSelect
-              value={weightUnit}
-              onChange={(e) => setWeightUnit(e.target.value)}
-            >
-              <option value="t">t</option>
-              <option value="kg">kg</option>
-            </UnitSelect>
-          </WeightContainer>
+        />
+        <UnitSelect
+          value={weightUnit}
+          onChange={(e) => setWeightUnit(e.target.value)}
+        >
+          <option value="t">t</option>
+          <option value="kg">kg</option>
+        </UnitSelect>
+      </WeightContainer>
         </WeightGroup>
 
         <DownloadButton onClick={handleDownloadPDF}>
@@ -566,11 +566,11 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
 
           <FormCheckboxContainer>
             <FormCheckbox
-              type="checkbox"
-              checked={isContinuousDelivery}
-              onChange={(e) => setIsContinuousDelivery(e.target.checked)}
+                type="checkbox"
+                checked={isContinuousDelivery}
+                onChange={(e) => setIsContinuousDelivery(e.target.checked)}
               id="continuous-delivery"
-            />
+              />
             <FormCheckboxLabel htmlFor="continuous-delivery">
               Continuous Delivery
             </FormCheckboxLabel>

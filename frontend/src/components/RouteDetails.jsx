@@ -20,7 +20,7 @@ const Title = styled.div`
 
 const RouteDetailsTable = styled.div`
   display: grid;
-  grid-template-columns: 1.5fr 0.8fr 1fr 0.8fr 0.8fr 0.8fr 0.5fr;
+  grid-template-columns: 1.5fr 0.8fr 0.8fr 0.8fr 0.8fr 1fr;
   gap: 1rem;
   padding: 1rem;
   background: white;
@@ -594,6 +594,31 @@ const RouteDetails = ({
       : bValue - aValue;
   });
 
+  const calculateLastSendingDate = (route) => {
+    if (!route?.deliveryDate) return '';
+
+    try {
+      const deliveryDate = new Date(route.deliveryDate);
+      const totalTime = route?.routeData?.lowestEmission?.totalTime || 0;
+      
+      // Convert hours to days and round up, then add 1 day buffer
+      const daysNeeded = Math.ceil(totalTime / 24) + 1;
+      
+      // Calculate last sending date
+      const lastSendingDate = new Date(deliveryDate);
+      lastSendingDate.setDate(deliveryDate.getDate() - daysNeeded);
+      
+      // Format date as DD.MM.
+      const day = lastSendingDate.getDate().toString().padStart(2, '0');
+      const month = (lastSendingDate.getMonth() + 1).toString().padStart(2, '0');
+      
+      return `${day}.${month}.`;
+    } catch (error) {
+      console.error('Error calculating last sending date:', error);
+      return '';
+    }
+  };
+
   return (
     // Component JSX structure
     <Container>
@@ -601,10 +626,9 @@ const RouteDetails = ({
       <RouteDetailsTable>
         <TableHeader>Route</TableHeader>
         <TableHeader>Weight</TableHeader>
-        <TableHeader>CO₂</TableHeader>
         <TableHeader>CO₂/t</TableHeader>
-        <TableHeader>€</TableHeader>
         <TableHeader>€/t</TableHeader>
+        <TableHeader>Last Send</TableHeader>
         <TableHeader>
           <Checkbox
             type="checkbox"
@@ -630,13 +654,12 @@ const RouteDetails = ({
             <React.Fragment key={route.id}>
               <TableCell>{route.name || `${route.origin} to ${route.destination}`}</TableCell>
               <TableCell>{route.weight}</TableCell>
-              <TableCell>{totalEmission.toFixed(2)}</TableCell>
               <TableCell>{emissionPerTonne.toFixed(2)}</TableCell>
-              <TableCell>{(route.cost || 0).toFixed(2)}</TableCell>
               <TableCell>{costPerTonne.toFixed(2)}</TableCell>
+              <TableCell>{calculateLastSendingDate(route)}</TableCell>
               <TableCell>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
+                  <Checkbox
                     type="checkbox"
                     checked={selectedRoutes.has(route.id)}
                     onChange={() => handleRouteToggle(route.id)}
