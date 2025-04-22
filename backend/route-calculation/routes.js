@@ -3,7 +3,7 @@ const path = require('path');
 const { findTruckRoute } = require('./find-routes.js')
 const supabase = require('./config/database');
 
-// Emission rates in kg CO2e per ton-km
+// Emission rates in g CO2e per ton-km
 const EMISSION_RATES = {
   truck: 30,    // Average truck emission rate
   rail: 0.001,    // Electric train emission rate

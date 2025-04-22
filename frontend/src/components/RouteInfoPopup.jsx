@@ -130,18 +130,18 @@ const RouteInfoPopup = ({ route, onClose }) => {
 
   const { routeData, origin, destination, weight, sendingDate, cost } = route;
   
-  // Convert weight to kg for calculations
+  // Convert weight to kg consistently with StatsView
   const weightInKg = weight.includes('kg') 
     ? parseFloat(weight)
     : parseFloat(weight) * 1000;
 
-  const currentRoute = routeData.lowestEmission;
-  const totalTime = currentRoute.totalTime || 0;
-  const totalDistance = currentRoute.totalDistance || 0;
-  // Calculate total emission based on weight
-  const emissionPerKg = currentRoute.totalEmission || 0;
+  const currentRoute = routeData?.lowestEmission; // Match StatsView's path
+  const totalTime = currentRoute?.totalTime || 0;
+  const totalDistance = currentRoute?.totalDistance || 0;
+  
+  // Calculate emissions using same method as StatsView
+  const emissionPerKg = currentRoute?.totalEmission || 0;
   const totalEmission = emissionPerKg * weightInKg;
-  const totalCost = cost || 0;
 
   const formatDuration = (hours) => {
     const days = Math.floor(hours / 24);
@@ -200,20 +200,18 @@ const RouteInfoPopup = ({ route, onClose }) => {
   };
 
   console.log('Route data:', currentRoute);
-  console.log('GeoJSON features:', currentRoute.geojson?.features);
+  console.log('GeoJSON features:', currentRoute?.geojson?.features);
 
-  const emissionsData = currentRoute.geojson?.features?.reduce((acc, feature) => {
+  // Update segment emissions calculation
+  const emissionsData = currentRoute?.geojson?.features?.reduce((acc, feature) => {
     const properties = feature.properties || {};
     const transportType = getTransportMode(properties);
-    
-    // Convert ton-km emission to total kg CO2e for this segment
-    const weightInTonnes = weightInKg / 1000;
-    const emission = (properties.emission || 0) * weightInTonnes; // Emission already includes distance
+    const emission = (properties.emission || 0) * weightInKg;
     
     console.log(`Processing segment:`, {
       transport: transportType,
       rawEmission: properties.emission,
-      weightInTonnes,
+      weightInKg,
       segmentEmission: emission,
       properties
     });
@@ -240,11 +238,11 @@ const RouteInfoPopup = ({ route, onClose }) => {
   const emissionLegendFormatter = (value, entry) => 
     `${entry.name} (${(totalEmission * (value/100)).toFixed(2)} kg CO₂e, ${value.toFixed(1)}%)`;
 
-  const costData = currentRoute.geojson?.features?.reduce((acc, feature) => {
+  const costData = currentRoute?.geojson?.features?.reduce((acc, feature) => {
     const properties = feature.properties || {};
     const transportType = getTransportMode(properties);
     const distance = properties.distance || 0;
-    const segmentCost = (distance / currentRoute.totalDistance) * totalCost;
+    const segmentCost = (distance / currentRoute.totalDistance) * cost;
     
     const existingEntry = acc.find(entry => entry.name === getDisplayName(transportType));
     
@@ -296,7 +294,7 @@ const RouteInfoPopup = ({ route, onClose }) => {
             </InfoItem>
             <InfoItem>
               <span>Total Cost:</span>
-              <span>{totalCost.toFixed(2)} €</span>
+              <span>{cost.toFixed(2)} €</span>
             </InfoItem>
           </InfoSection>
 
