@@ -360,8 +360,8 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       const useAir = selectedTransportTypes.includes('air');
       const useRail = selectedTransportTypes.includes('rail');
 
-      const truckType = 'euroI';
-      const trainType = 'electric';
+      const truckType = 'euroI'; //euroI, euroII, euroIII, euroIV, euroV, euroVI
+      const trainType = 'electric'; //electric, diesel
 
       setIsLoading(true);
       const response = await axios.get(
