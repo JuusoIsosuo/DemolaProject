@@ -4,6 +4,8 @@ import axios from "axios";
 
 const Container = styled.div`
   position: relative;
+  width: 100%;
+  display: block;
 `;
 
 const SuggestionsList = styled.ul`
@@ -13,10 +15,14 @@ const SuggestionsList = styled.ul`
   right: 0;
   background: #fff;
   border: 1px solid #ccc;
+  border-radius: 6px;
   list-style: none;
   padding: 0.5rem 0;
   margin: 0;
   z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
 `;
 
 const SuggestionItem = styled.li`
