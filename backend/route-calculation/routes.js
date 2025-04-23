@@ -3,31 +3,48 @@ const path = require('path');
 const { findTruckRoute } = require('./find-routes.js')
 const supabase = require('./config/database');
 
-// Emission rates in kg CO2e per ton-km
+// Emission rates in g CO2e per ton-km
 const EMISSION_RATES = {
-  truck: 30,    // Average truck emission rate
-  rail: 0.001,    // Electric train emission rate
-  sea: 25,     // Container ship emission rate
-  air: 284        // Cargo aircraft emission rate
+  truck: {
+    euroI: 29,
+    euroII: 30,
+    euroIII: 31,
+    euroIV: 30,
+    euroV: 30,
+    euroVI: 29
+  },
+  rail: {
+    electric: 0.001,
+    diesel: 17.8
+  },
+  sea: 28,     // Container ship emission rate
+  air: 595        // Cargo aircraft emission rate
 };
 
 // Average load capacities in tons
 const LOAD_CAPACITIES = {
-  truck: 25,      // Standard truck capacity
+  truck: 40,      // Standard truck capacity (full load)
   rail: 2000,     // Freight train capacity
   sea: 165000,     // Container ship capacity
   air: 140        // Cargo aircraft capacity
 };
 
 // Calculate emission for a route segment
-const calculateEmission = (distance, transport) => {
-  const emissionRate = EMISSION_RATES[transport] || EMISSION_RATES.truck;
-  const loadCapacity = LOAD_CAPACITIES[transport] || LOAD_CAPACITIES.truck;
-  return distance * emissionRate / loadCapacity / 1000;
+const calculateEmission = (distance, transport, truckType, trainType) => {
+  console.log(EMISSION_RATES.truck[truckType]);
+  console.log(truckType);
+  console.log(trainType);
+  console.log(transport);
+  const emissionRate = transport === 'truck' ? EMISSION_RATES.truck[truckType] : 
+                      transport === 'rail' ? EMISSION_RATES.rail[trainType] : 
+                      EMISSION_RATES[transport];
+  const loadCapacity = LOAD_CAPACITIES[transport];
+  console.log(distance * emissionRate / loadCapacity / 1000 / 1000);
+  return distance * emissionRate / loadCapacity / 1000 / 1000;
 };
 
 // Read the graph from the database or JSON file
-const readGraph = async (useDatabase = true) => {
+const readGraph = async (useDatabase = true, truckType, trainType) => {
   try {
     if (useDatabase) {
       console.log('Reading graph from database');
@@ -73,7 +90,7 @@ const readGraph = async (useDatabase = true) => {
         const toLocation = locations.find(loc => loc.id === connection.to_location_id);
         
         if (fromLocation && toLocation) {
-          const emission = calculateEmission(connection.distance, connection.transport);
+          const emission = calculateEmission(connection.distance, connection.transport, truckType, trainType);
           
           // Add edge in both directions
           graph[fromLocation.name].edges.push({
@@ -113,7 +130,7 @@ const readGraph = async (useDatabase = true) => {
       for (const node in jsonGraph) {
         jsonGraph[node].edges = jsonGraph[node].edges.map(edge => ({
           ...edge,
-          emission: calculateEmission(edge.distance, edge.transport)
+          emission: calculateEmission(edge.distance, edge.transport, truckType, trainType)
         }));
       }
 
@@ -126,7 +143,7 @@ const readGraph = async (useDatabase = true) => {
 };
 
 // Add start or end location to graph if not already in graph
-const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
+const addLocationToGraph = async (graph, newLocation, newLocationCoords, truckType, trainType) => {
   if (!Array.isArray(newLocationCoords) || newLocationCoords.length !== 2) {
     console.error(`Invalid coordinates for new location ${newLocation}:`, newLocationCoords);
     return graph;
@@ -167,7 +184,7 @@ const addLocationToGraph = async (graph, newLocation, newLocationCoords) => {
         continue;
       }
 
-      const emission = calculateEmission(distance, 'truck');
+      const emission = calculateEmission(distance, 'truck', truckType, trainType);
       console.log(`Calculated emission: ${emission} kg CO2e`);
         
       // Add the new edge for both directions
@@ -262,8 +279,8 @@ const dijkstra = (graph, start, end, costType, allowedTransports = ['truck', 'ra
 };
 
 // Main function to find optimal routes
-const findBestRoutes = async (start, end, startCoords, endCoords, useSea = true, useAir = true, useRail = true) => {
-  let graph = await readGraph();
+const findBestRoutes = async (start, end, startCoords, endCoords, useSea = true, useAir = true, useRail = true, truckType = 'euroV', trainType = 'electric') => {
+  let graph = await readGraph(true, truckType, trainType);
   
   // Determine which transport modes to use
   const allowedTransports = ['truck']; // Truck is always included
@@ -287,7 +304,7 @@ const findBestRoutes = async (start, end, startCoords, endCoords, useSea = true,
         };
       }
       
-      const emission = calculateEmission(distance, 'truck');
+      const emission = calculateEmission(distance, 'truck', truckType, trainType);
       
       const directRoute = {
         path: [start, end],
@@ -325,11 +342,11 @@ const findBestRoutes = async (start, end, startCoords, endCoords, useSea = true,
   // Add start and end locations to the graph if they are not already there
   if (!graph[start]) {
     console.log(`Adding start location ${start} to graph`);
-    graph = await addLocationToGraph(graph, start, startCoords);
+    graph = await addLocationToGraph(graph, start, startCoords, truckType, trainType);
   }
   if (!graph[end]) {
     console.log(`Adding end location ${end} to graph`);
-    graph = await addLocationToGraph(graph, end, endCoords);
+    graph = await addLocationToGraph(graph, end, endCoords, truckType, trainType);
   }
 
   // Find the best routes with the allowed transport modes
