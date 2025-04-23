@@ -360,9 +360,12 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       const useAir = selectedTransportTypes.includes('air');
       const useRail = selectedTransportTypes.includes('rail');
 
+      const truckType = 'euroI';
+      const trainType = 'electric';
+
       setIsLoading(true);
       const response = await axios.get(
-        `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}`
+        `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}&truckType=${truckType}&trainType=${trainType}`
       );
 
       let totalCost = 0;

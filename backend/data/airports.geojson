@@ -4,6 +4,160 @@
     {
       "type": "Feature",
       "properties": {
+        "name": "London Heathrow Airport",
+        "country": "United Kingdom"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-0.4543, 51.4700]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Paris Charles de Gaulle Airport",
+        "country": "France"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [2.55, 49.0097]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Amsterdam Schiphol Airport",
+        "country": "Netherlands"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [4.7639, 52.3105]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Frankfurt am Main Airport",
+        "country": "Germany"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [8.5706, 50.0379]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Istanbul Airport",
+        "country": "Turkey"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [28.8153, 41.2753]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Madrid-Barajas Adolfo Suárez Airport",
+        "country": "Spain"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-3.5695, 40.4983]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Barcelona El Prat Airport",
+        "country": "Spain"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [2.0759, 41.2974]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Munich Airport",
+        "country": "Germany"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [11.7861, 48.3538]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Rome–Fiumicino International Airport",
+        "country": "Italy"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.2508, 41.8003]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Copenhagen Airport",
+        "country": "Denmark"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [12.6508, 55.6181]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Vienna International Airport",
+        "country": "Austria"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [16.5636, 48.1103]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Zurich Airport",
+        "country": "Switzerland"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [8.5492, 47.4581]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Lisbon Humberto Delgado Airport",
+        "country": "Portugal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-9.1359, 38.7742]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Oslo Gardermoen Airport",
+        "country": "Norway"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [11.1004, 60.1976]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "name": "Helsinki-Vantaa Airport",
         "country": "Finland"
       },
@@ -15,12 +169,133 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "London Heathrow Airport",
-        "country": "United Kingdom"
+        "name": "Stockholm Arlanda Airport",
+        "country": "Sweden"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [-0.4543, 51.4700]
+        "coordinates": [17.9306, 59.6498]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Warsaw Chopin Airport",
+        "country": "Poland"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [20.9676, 52.1657]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Prague Václav Havel Airport",
+        "country": "Czech Republic"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [14.2647, 50.1008]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Budapest Ferenc Liszt International Airport",
+        "country": "Hungary"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [19.2556, 47.4331]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Athens International Airport",
+        "country": "Greece"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [23.9465, 37.9364]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Istanbul Sabiha Gökçen Airport",
+        "country": "Turkey"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [29.3090, 40.8986]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Moscow Sheremetyevo International Airport",
+        "country": "Russia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [37.4166, 55.9726]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Hartsfield-Jackson Atlanta International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-84.4277, 33.6407]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Dallas/Fort Worth International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-97.0403, 32.8998]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Denver International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-104.6737, 39.8561]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Los Angeles International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-118.4085, 33.9416]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "O'Hare International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-87.9048, 41.9742]
       }
     },
     {
@@ -37,6 +312,105 @@
     {
       "type": "Feature",
       "properties": {
+        "name": "Orlando International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-81.3081, 28.4312]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Harry Reid International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-115.1537, 36.084]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Charlotte Douglas International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-80.9431, 35.214]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Miami International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-80.2906, 25.7959]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Seattle-Tacoma International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3088, 47.4502]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "San Francisco International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.379, 37.6213]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Newark Liberty International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-74.1745, 40.6895]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Phoenix Sky Harbor International Airport",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-112.0116, 33.4342]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Mexico City International Airport",
+        "country": "Mexico"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-99.0721, 19.4363]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
         "name": "São Paulo/Guarulhos – Governador André Franco Montoro International Airport",
         "country": "Brazil"
       },
@@ -48,78 +422,34 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Buenos Aires Ministro Pistarini International Airport (Ezeiza)",
-        "country": "Argentina"
+        "name": "El Dorado International Airport",
+        "country": "Colombia"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [-58.5358, -34.8222]
+        "coordinates": [-74.1469, 4.7016]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Dubai International Airport",
-        "country": "United Arab Emirates"
+        "name": "Lima Jorge Chávez International Airport",
+        "country": "Peru"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [55.3644, 25.2532]
+        "coordinates": [-77.1143, -12.0219]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Tokyo Haneda Airport",
-        "country": "Japan"
+        "name": "Santiago International Airport (Arturo Merino Benítez)",
+        "country": "Chile"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [139.7798, 35.5494]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Sydney Kingsford Smith Airport",
-        "country": "Australia"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [151.1772, -33.9399]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Cairo International Airport",
-        "country": "Egypt"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [31.4056, 30.1219]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Toronto Pearson International Airport",
-        "country": "Canada"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-79.6306, 43.6777]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Hong Kong International Airport",
-        "country": "Hong Kong"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [113.9185, 22.3080]
+        "coordinates": [-70.7858, -33.3930]
       }
     }
   ]

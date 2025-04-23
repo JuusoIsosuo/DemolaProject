@@ -20,6 +20,8 @@ app.get("/routes", async (req, res) => {
     const useSea = req.query.useSea === 'true';
     const useAir = req.query.useAir === 'true';
     const useRail = req.query.useRail === 'true';
+    const truckType = req.query.truckType;
+    const trainType = req.query.trainType;
 
     console.log(`Route request received: ${origin} -> ${destination}`);
     console.log(`Coordinates: ${originCoordinates} -> ${destinationCoordinates}`);
@@ -40,7 +42,7 @@ app.get("/routes", async (req, res) => {
 
     console.log("Finding best routes...");
     // Find the best routes
-    const routes = await findBestRoutes(origin, destination, originCoordsArray, destCoordsArray, useSea, useAir, useRail);
+    const routes = await findBestRoutes(origin, destination, originCoordsArray, destCoordsArray, useSea, useAir, useRail, truckType, trainType);
     
     console.log("Routes found:", routes ? "Yes" : "No");
     if (routes) {
