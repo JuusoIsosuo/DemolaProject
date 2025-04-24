@@ -18,7 +18,7 @@ const processedEdges = {
 };
 
 // Convert GeoJSON to graph representation
-const buildGraph = async (clearDatabase = false) => {
+const buildGraph = async (clearDatabase = false, replaceDatabase = false) => {
   try {
     // Test connection to Supabase
     const { data, error } = await supabase.from('locations').select('count');
@@ -34,6 +34,77 @@ const buildGraph = async (clearDatabase = false) => {
       await supabase.from('connections').delete().neq('id', 0);
       await supabase.from('locations').delete().neq('id', 0);
       console.log('Database cleared successfully.');
+    } else if (replaceDatabase) {
+      console.log('Synchronizing database with GeoJSON files...');
+      
+      // Get all locations from database
+      const { data: dbLocations, error: dbError } = await supabase
+        .from('locations')
+        .select('id, name');
+      
+      if (dbError) {
+        console.error('Error fetching locations from database:', dbError);
+        throw dbError;
+      }
+
+      // Create a map of all locations from GeoJSON files
+      const geoJsonLocations = new Map();
+      const airport_locations = AIRPORTS.features;
+      const port_locations = PORTS.features;
+      const railway_locations = RAILWAY_STATIONS.features;
+      
+      [...airport_locations, ...port_locations, ...railway_locations].forEach(location => {
+        geoJsonLocations.set(location.properties.name, location);
+      });
+
+      // Find locations to delete (those in DB but not in GeoJSON)
+      const locationsToDelete = dbLocations.filter(dbLoc => !geoJsonLocations.has(dbLoc.name));
+      
+      if (locationsToDelete.length > 0) {
+        console.log(`Found ${locationsToDelete.length} locations to delete`);
+        
+        // Delete connections first (due to foreign key constraints)
+        for (const location of locationsToDelete) {
+          await supabase
+            .from('connections')
+            .delete()
+            .or(`from_location_id.eq.${location.id},to_location_id.eq.${location.id}`);
+        }
+        
+        // Delete locations
+        await supabase
+          .from('locations')
+          .delete()
+          .in('id', locationsToDelete.map(loc => loc.id));
+          
+        console.log('Deleted outdated locations and their connections');
+      }
+
+      // Find locations to add (those in GeoJSON but not in DB)
+      const dbLocationNames = new Set(dbLocations.map(loc => loc.name));
+      const locationsToAdd = [...geoJsonLocations.entries()]
+        .filter(([name]) => !dbLocationNames.has(name))
+        .map(([_, location]) => location);
+
+      if (locationsToAdd.length > 0) {
+        console.log(`Found ${locationsToAdd.length} new locations to add`);
+        
+        // Insert new locations
+        const { data: newLocations, error: insertError } = await supabase
+          .from('locations')
+          .insert(locationsToAdd.map(location => ({
+            name: location.properties.name,
+            coordinates: location.geometry.coordinates
+          })))
+          .select('id, name');
+        
+        if (insertError) {
+          console.error('Error inserting new locations:', insertError);
+          throw insertError;
+        }
+        
+        console.log('Added new locations to database');
+      }
     } else {
       console.log('Keeping existing data in the database. Only adding new locations and routes.');
     }
@@ -302,9 +373,10 @@ const buildGraph = async (clearDatabase = false) => {
 if (require.main === module) {
   (async () => {
     try {
-      // Check if command line argument is provided to clear the database
+      // Check if command line arguments are provided
       const clearDb = process.argv.includes('--clear');
-      await buildGraph(clearDb);
+      const replaceDb = process.argv.includes('--replace');
+      await buildGraph(clearDb, replaceDb);
       console.log('Graph building completed');
     } catch (error) {
       console.error('Failed to build graph:', error);

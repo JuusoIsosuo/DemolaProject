@@ -12,22 +12,30 @@ If the start or the end point of the requested route is not one of the predefine
 
 ### Locations
 
-The currently included locations.
-![Locations](./images/locations.jpg)
+
 
 ### How to Generate the Graph
 
-If you make modifications to the code (`build-graph.js` or `find-routes.js`) or the location files in the `data/`, you need to run the script to repopulate the database.
+If you make modifications to the code (`build-graph.js` or `find-routes.js`) or the location files in the `data/`, you need to run the script to repopulate the database. It may take a long time.
 
 If you added new locations run this in the backend root to add the locations:
 ```
-node route-calculation/build-graphs.js
+node route-calculation/build-graph.js
 ```
-If you made modifications to the code run the script with the `--clear` flag (DON'T DO THIS UNNECESSARILY, this will completely reset the database and take a very long time):
+If you want to remove locations and connections from the database that have been removed from the geojson files and add new locations, you can run:
 ```
-node route-calculation/build-graphs.js --clear
+node route-calculation/build-graph.js --replace
+```
+If you made modifications to the code or changed all of the run the script with the `--clear` flag (DON'T DO THIS UNNECESSARILY, this will completely reset the database and take a very long time):
+```
+node route-calculation/build-graph.js --clear
 ```
 
+If you are want to rebuild graph.json, you can run:
+```
+node route-calculation/build-graph-json.js
+```
+Note that this will result in a very large file unless you reduce the number of locations in the geojson files.
 
 ## Setup & Run the Project
 
