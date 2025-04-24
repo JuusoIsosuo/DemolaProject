@@ -4,158 +4,26 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Santos",
-        "country": "Brazil"
+        "name": "Port of Helsinki",
+        "country": "Finland"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [-46.3, -23.9]
+        "coordinates": [24.9, 60.2]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Rio Grande",
-        "country": "Brazil"
+        "name": "Port of Tallinn",
+        "country": "Estonia"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [-52.1, -32.0]
+        "coordinates": [24.8, 59.4]
       }
     },
     {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Paranaguá",
-        "country": "Brazil"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-48.5, -25.5]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Buenos Aires",
-        "country": "Argentina"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-58.4, -34.6]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Rosario",
-        "country": "Argentina"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-60.7, -32.9]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Valparaíso",
-        "country": "Chile"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-71.6, -33.0]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of San Antonio",
-        "country": "Chile"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-71.7, -33.6]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Callao",
-        "country": "Peru"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-77.1, -12.0]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Guayaquil",
-        "country": "Ecuador"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-79.9, -2.2]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Cartagena",
-        "country": "Colombia"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-75.5, 10.4]
-      }
-        },
-        {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Buenaventura",
-        "country": "Colombia"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-77.0, 3.9]
-      }
-        },
-        {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of La Guaira",
-        "country": "Venezuela"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-66.9, 10.6]
-      }
-        },
-        {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Montevideo",
-        "country": "Uruguay"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-56.2, -34.9]
-      }
-        },
-        {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Asunción",
-        "country": "Paraguay"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-57.6, -25.3]
-      }
-        },
-        {
       "type": "Feature",
       "properties": {
         "name": "Port of Hamburg",
@@ -164,6 +32,28 @@
       "geometry": {
         "type": "Point",
         "coordinates": [10.0, 53.5]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Rotterdam",
+        "country": "Netherlands"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [4.3, 51.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of London",
+        "country": "United Kingdom"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [0.0, 51.5]
       }
     },
     {
@@ -191,12 +81,12 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Genoa",
-        "country": "Italy"
+        "name": "Port of Lisbon",
+        "country": "Portugal"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [8.9, 44.4]
+        "coordinates": [-9.1, 38.7]
       }
     },
     {
@@ -213,320 +103,111 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Gdansk",
-        "country": "Poland"
+        "name": "Port of Istanbul",
+        "country": "Turkey"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [18.6, 54.4]
+        "coordinates": [28.9, 41.0]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Constanta",
-        "country": "Romania"
+        "name": "Port of Dubai",
+        "country": "United Arab Emirates"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [28.8, 44.2]
+        "coordinates": [55.3, 25.3]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Tallinn",
-        "country": "Estonia"
+        "name": "Port of Mumbai",
+        "country": "India"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [24.8, 59.4]
+        "coordinates": [72.8, 18.9]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Klaipeda",
-        "country": "Lithuania"
+        "name": "Port of Singapore",
+        "country": "Singapore"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [21.1, 55.7]
+        "coordinates": [103.8, 1.3]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Dublin",
-        "country": "Ireland"
+        "name": "Port of Shanghai",
+        "country": "China"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [-6.2, 53.3]
+        "coordinates": [121.5, 31.2]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Bergen",
-        "country": "Norway"
+        "name": "Port of Hong Kong",
+        "country": "China"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3, 60.4]
+        "coordinates": [114.2, 22.3]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Copenhagen",
-        "country": "Denmark"
+        "name": "Port of Tokyo",
+        "country": "Japan"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [12.6, 55.7]
+        "coordinates": [139.8, 35.6]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Lisbon",
-        "country": "Portugal"
+        "name": "Port of Busan",
+        "country": "South Korea"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [-9.1, 38.7]
+        "coordinates": [129.1, 35.1]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Rijeka",
-        "country": "Croatia"
+        "name": "Port of Sydney",
+        "country": "Australia"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [14.4, 45.3]
+        "coordinates": [151.2, -33.9]
       }
     },
     {
       "type": "Feature",
       "properties": {
-        "name": "Port of Riga",
-        "country": "Latvia"
+        "name": "Port of Auckland",
+        "country": "New Zealand"
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [24.1, 56.9]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Gothenburg",
-        "country": "Sweden"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [11.9, 57.7]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Helsinki",
-        "country": "Finland"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [24.9, 60.2]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of London",
-        "country": "United Kingdom"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [0.0, 51.5]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Liverpool",
-        "country": "United Kingdom"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-3.0, 53.4]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Southampton",
-        "country": "United Kingdom"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-1.4, 50.9]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Reykjavik",
-        "country": "Iceland"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-21.9, 64.1]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Valletta",
-        "country": "Malta"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [14.5, 35.9]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Monaco",
-        "country": "Monaco"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [7.4, 43.7]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Varna",
-        "country": "Bulgaria"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [27.9, 43.2]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Odessa",
-        "country": "Ukraine"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [30.7, 46.5]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Bilbao",
-        "country": "Spain"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-3.0, 43.4]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Valencia",
-        "country": "Spain"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-0.3, 39.5]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Thessaloniki",
-        "country": "Greece"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [22.9, 40.6]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Split",
-        "country": "Croatia"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [16.4, 43.5]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Nice",
-        "country": "France"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [7.3, 43.7]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Bordeaux",
-        "country": "France"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-0.6, 44.9]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of La Rochelle",
-        "country": "France"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-1.2, 46.2]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Brest",
-        "country": "France"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-4.5, 48.4]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "name": "Port of Nantes Saint-Nazaire",
-        "country": "France"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-2.2, 47.3]
+        "coordinates": [174.8, -36.8]
       }
     },
     {
@@ -538,6 +219,369 @@
       "geometry": {
         "type": "Point",
         "coordinates": [-118.3, 33.7]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of New York and New Jersey",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-74.0, 40.7]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Houston",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-95.0, 29.7]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Vancouver",
+        "country": "Canada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-123.1, 49.3]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Montreal",
+        "country": "Canada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-73.6, 45.5]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Santos",
+        "country": "Brazil"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-46.3, -23.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Buenos Aires",
+        "country": "Argentina"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-58.4, -34.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Valparaíso",
+        "country": "Chile"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-71.6, -33.0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Cape Town",
+        "country": "South Africa"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [18.4, -33.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Durban",
+        "country": "South Africa"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [31.0, -29.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Lagos",
+        "country": "Nigeria"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [3.4, 6.4]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Mombasa",
+        "country": "Kenya"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.7, -4.0]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Alexandria",
+        "country": "Egypt"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [29.9, 31.2]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Jeddah",
+        "country": "Saudi Arabia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.2, 21.5]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Colombo",
+        "country": "Sri Lanka"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [79.8, 6.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Manila",
+        "country": "Philippines"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [120.9, 14.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Ho Chi Minh City",
+        "country": "Vietnam"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.7, 10.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Bangkok",
+        "country": "Thailand"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [100.5, 13.7]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Yangon",
+        "country": "Myanmar"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [96.2, 16.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Chittagong",
+        "country": "Bangladesh"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [91.8, 22.3]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Karachi",
+        "country": "Pakistan"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [67.0, 24.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Chennai",
+        "country": "India"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [80.3, 13.1]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Melbourne",
+        "country": "Australia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [144.9, -37.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Fremantle",
+        "country": "Australia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [115.7, -32.1]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Seattle",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-122.3, 47.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Long Beach",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-118.2, 33.8]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Savannah",
+        "country": "United States"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-81.1, 32.1]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Halifax",
+        "country": "Canada"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-63.6, 44.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Veracruz",
+        "country": "Mexico"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-96.1, 19.2]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Cartagena",
+        "country": "Colombia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-75.5, 10.4]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Montevideo",
+        "country": "Uruguay"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-56.2, -34.9]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Casablanca",
+        "country": "Morocco"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-7.6, 33.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Dakar",
+        "country": "Senegal"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-17.4, 14.7]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Dar es Salaam",
+        "country": "Tanzania"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [39.3, -6.8]
       }
     }
   ]
