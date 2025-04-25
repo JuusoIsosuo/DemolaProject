@@ -23,7 +23,7 @@ const EMISSION_RATES = {
 
 // Average load capacities in tons
 const LOAD_CAPACITIES = {
-  truck: 40,      // Standard truck capacity (full load)
+  truck: 25,      // Standard truck capacity (full load)
   rail: 2000,     // Freight train capacity
   sea: 165000,     // Container ship capacity
   air: 140        // Cargo aircraft capacity
@@ -35,7 +35,7 @@ const calculateEmission = (distance, transport, truckType, trainType) => {
                       transport === 'rail' ? EMISSION_RATES.rail[trainType] : 
                       EMISSION_RATES[transport];
   const loadCapacity = LOAD_CAPACITIES[transport];
-  return distance * emissionRate / loadCapacity / 1000 / 1000;
+  return distance * emissionRate / 1000 / 1000;
 };
 
 // Read the graph from the database or JSON file

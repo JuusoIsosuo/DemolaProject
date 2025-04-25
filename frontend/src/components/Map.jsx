@@ -454,12 +454,7 @@ const Map = ({
       {selectedRoute && (
         <RouteInfoOverlay>
           <InfoSection>
-            <h3>Route Information</h3>
-            <p><strong>From:</strong> {origin}</p>
-            <p><strong>To:</strong> {destination}</p>
-            <p><strong>Total Distance:</strong> {selectedRoute.length} km</p>
             <p><strong>Estimated Duration:</strong> {selectedRoute.duration}</p>
-            <p><strong>CO2 Emissions:</strong> {selectedRoute.emissions}</p>
           </InfoSection>
         </RouteInfoOverlay>
       )}
