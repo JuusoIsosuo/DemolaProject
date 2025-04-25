@@ -143,9 +143,10 @@ const StatsView = ({ routes, selectedRoutes }) => {
         : parseFloat(route.weight) * 1000;
       const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
       const totalEmission = emissionPerKg * weightInKg;
+      const weightInTonnes = weightInKg / 1000;
       return {
         name: route.name || `${route.origin} to ${route.destination}`,
-        value: totalEmission
+        value: totalEmission / weightInTonnes
       };
     });
 
@@ -171,11 +172,11 @@ const StatsView = ({ routes, selectedRoutes }) => {
       <StatsContainer>
         <StatBox>
           <StatTitle>Total Emissions</StatTitle>
-          <StatValue>{totals.emissions.toFixed(2)} kg CO₂</StatValue>
+          <StatValue>{Math.round(totals.emissions)} kg CO₂</StatValue>
         </StatBox>
         <StatBox>
           <StatTitle>Total Cost</StatTitle>
-          <StatValue>€{totals.cost.toFixed(2)}</StatValue>
+          <StatValue>€{Math.round(totals.cost)}</StatValue>
         </StatBox>
       </StatsContainer>
 

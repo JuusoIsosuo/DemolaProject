@@ -288,6 +288,29 @@ const FrequencySelect = styled.select`
   }
 `;
 
+const Select = styled.select`
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  width: 150px;
+  background: #f9fafb;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1.25em;
+  padding-right: 2rem;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background-color: white;
+  }
+`;
+
 // AddRouteForm component handles adding new routes and generating PDF reports
 const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, isLoading, setIsLoading }) => {
   // State for form inputs
@@ -305,6 +328,8 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
   const [frequency, setFrequency] = useState('weekly');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [truckType, setTruckType] = useState('euroIV');
+  const [trainType, setTrainType] = useState('electric');
 
   const transportTypes = [
     { id: 'all', label: 'All' },
@@ -360,9 +385,6 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       const useAir = selectedTransportTypes.includes('air');
       const useRail = selectedTransportTypes.includes('rail');
 
-      const truckType = 'euroI'; //euroI, euroII, euroIII, euroIV, euroV, euroVI
-      const trainType = 'electric'; //electric, diesel
-
       setIsLoading(true);
       const response = await axios.get(
         `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}&truckType=${truckType}&trainType=${trainType}`
@@ -406,10 +428,6 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleAdvancedSettings = () => {
-    setShowAdvancedSettings(prev => !prev);
   };
 
   // Generate and download PDF report for routes
@@ -551,6 +569,36 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
               placeholder="Enter route name (optional)"
             />
           </FormGroup>
+
+          {selectedTransportTypes.includes('truck') && (
+            <FormGroup>
+              <Label>Truck Type</Label>
+              <Select
+                value={truckType}
+                onChange={(e) => setTruckType(e.target.value)}
+              >
+                <option value="euroI">Euro I</option>
+                <option value="euroII">Euro II</option>
+                <option value="euroIII">Euro III</option>
+                <option value="euroIV">Euro IV</option>
+                <option value="euroV">Euro V</option>
+                <option value="euroVI">Euro VI</option>
+              </Select>
+            </FormGroup>
+          )}
+
+          {selectedTransportTypes.includes('rail') && (
+            <FormGroup>
+              <Label>Train Type</Label>
+              <Select
+                value={trainType}
+                onChange={(e) => setTrainType(e.target.value)}
+              >
+                <option value="electric">Electric</option>
+                <option value="diesel">Diesel</option>
+              </Select>
+            </FormGroup>
+          )}
 
           <FormGroup>
             <Label>Delivery Date</Label>
