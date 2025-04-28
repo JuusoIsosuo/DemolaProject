@@ -78,12 +78,6 @@ const AddButton = styled.button`
   }
 `;
 
-const DownloadButton = styled(AddButton)`
-  height: fit-content;
-  margin-left: auto;
-  padding: 0.5rem 1rem;
-`;
-
 const TransportTypeContainer = styled.div`
   display: flex;
   gap: 0.5rem;
@@ -314,15 +308,14 @@ const Select = styled.select`
 // AddRouteForm component handles adding new routes and generating PDF reports
 const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, isLoading, setIsLoading }) => {
   // State for form inputs
-  const [origin, setOrigin] = React.useState('');
-  const [destination, setDestination] = React.useState('');
-  const [weight, setWeight] = React.useState('');
-  const [weightUnit, setWeightUnit] = React.useState('t');
+  const [formData, setFormData] = useState({
+    weightUnit: 't',
+    transportTypes: ['truck', 'sea', 'air', 'rail'], // All types selected by default
+  });
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [routeName, setRouteName] = useState('');
   const [isFragile, setFragile] = React.useState(false); // Checkbox state
   const [isContinuousDelivery, setIsContinuousDelivery] = React.useState(false);
-  const [selectedTransportTypes, setSelectedTransportTypes] = React.useState(['truck']);
   const [selectedDate, setSelectedDate] = React.useState('');
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [frequency, setFrequency] = useState('weekly');
@@ -339,19 +332,32 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
     { id: 'air', label: 'Air' }
   ];
 
-  const handleTransportTypeClick = (typeId) => {
-    if (typeId === 'truck') return; // Truck is always selected
-
-    if (typeId === 'all') {
-      setSelectedTransportTypes(['truck', 'rail', 'sea', 'air']);
+  const handleTransportTypeChange = (type) => {
+    if (type === 'truck') return; // Prevent deselecting truck
+    
+    if (type === 'all') {
+      // If all types are currently selected, keep only truck
+      if (formData.transportTypes.length === 4) {
+        setFormData(prev => ({
+          ...prev,
+          transportTypes: ['truck']
+        }));
+      } else {
+        // Otherwise select all types
+        setFormData(prev => ({
+          ...prev,
+          transportTypes: ['truck', 'sea', 'air', 'rail']
+        }));
+      }
       return;
     }
-
-    const newTypes = selectedTransportTypes.includes(typeId)
-      ? selectedTransportTypes.filter(t => t !== typeId)
-      : [...selectedTransportTypes, typeId];
-
-    setSelectedTransportTypes(newTypes);
+    
+    setFormData(prev => ({
+      ...prev,
+      transportTypes: prev.transportTypes.includes(type)
+        ? prev.transportTypes.filter(t => t !== type)
+        : [...prev.transportTypes, type]
+    }));
   };
 
   // Get coordinates from Mapbox API for a given address
@@ -371,27 +377,27 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
 
   // Handle adding a new route with calculations for costs
   const handleAddRoute = async () => {
-    if (!origin || !destination || !weight) return;
+    if (!formData.origin || !formData.destination || !formData.weight) return;
 
     try {
-      const originCoords = await getCoordinates(origin);
-      const destCoords = await getCoordinates(destination);
+      const originCoords = await getCoordinates(formData.origin);
+      const destCoords = await getCoordinates(formData.destination);
 
       if (!originCoords || !destCoords) {
         throw new Error("Could not get coordinates for origin or destination");
       }
 
-      const useSea = selectedTransportTypes.includes('sea');
-      const useAir = selectedTransportTypes.includes('air');
-      const useRail = selectedTransportTypes.includes('rail');
+      const useSea = formData.transportTypes.includes('sea');
+      const useAir = formData.transportTypes.includes('air');
+      const useRail = formData.transportTypes.includes('rail');
 
       setIsLoading(true);
       const response = await axios.get(
-        `http://localhost:3000/routes?origin=${origin}&destination=${destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}&truckType=${truckType}&trainType=${trainType}`
+        `http://localhost:3000/routes?origin=${formData.origin}&destination=${formData.destination}&originCoords=${originCoords.join(',')}&destCoords=${destCoords.join(',')}&useSea=${useSea}&useAir=${useAir}&useRail=${useRail}&truckType=${truckType}&trainType=${trainType}`
       );
 
       let totalCost = 0;
-      const weightInTonnes = weightUnit === 'kg' ? parseFloat(weight) / 1000 : parseFloat(weight);
+      const weightInTonnes = formData.weightUnit === 'kg' ? parseFloat(formData.weight) / 1000 : parseFloat(formData.weight);
 
       const costPerTonneKm = {
         truck: 0.115,
@@ -400,22 +406,41 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         air: 0.18
       };
 
-      response.data.lowestEmission.geojson.features.forEach(feature => {
-        const distanceKm = feature.properties.distance;
-        const transport = feature.properties.transport.toLowerCase();
-        const costRate = costPerTonneKm[transport] || costPerTonneKm.truck;
-        const segmentCost = distanceKm * weightInTonnes * costRate;
-        totalCost += segmentCost;
-      });
+      // Calculate cost for both fastest and lowestEmission routes
+      const calculateRouteCost = (routeData) => {
+        let cost = 0;
+        if (routeData?.geojson?.features) {
+          routeData.geojson.features.forEach(feature => {
+            const distanceKm = feature.properties.distance;
+            const transport = feature.properties.transport.toLowerCase();
+            const costRate = costPerTonneKm[transport] || costPerTonneKm.truck;
+            const segmentCost = distanceKm * weightInTonnes * costRate;
+            cost += segmentCost;
+          });
+        }
+        return cost;
+      };
 
       const newRoute = {
         id: Date.now(),
-        origin,
-        destination,
-        routeData: response.data,
-        weight: `${weight}${weightUnit}`,
-        cost: totalCost,
-        name: routeName || `${origin} to ${destination}`
+        origin: formData.origin,
+        destination: formData.destination,
+        routeData: {
+          fastest: response.data.fastest,
+          lowestEmission: response.data.lowestEmission,
+          useSea,
+          useAir,
+          useRail
+        },
+        weight: `${formData.weight}${formData.weightUnit}`,
+        cost: calculateRouteCost(response.data.lowestEmission),
+        name: routeName || `${formData.origin} to ${formData.destination}`,
+        deliveryDate: selectedDate,
+        isFragile: isFragile,
+        isContinuousDelivery: isContinuousDelivery,
+        frequency: frequency,
+        startDate: startDate,
+        endDate: endDate
       };
 
       setRoutes(prevRoutes => [...prevRoutes, newRoute]);
@@ -430,59 +455,10 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
     }
   };
 
-  // Generate and download PDF report for routes
-  const handleDownloadPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "normal");
-    doc.text("Routes Summary Report", 15, 10);
-
-    const headers = [["Origin", "Destination", "Weight", "CO2 (kg)", "Cost (€)"]];
-    const rows = routes.map(route => [
-      route.origin,
-      route.destination,
-      route.weight,
-      parseFloat(route.routeData?.lowestEmission?.totalEmission).toFixed(2),
-      parseFloat(route.cost).toFixed(2)
-    ]);
-
-    const totals = routes
-      .filter(route => selectedRoutes.has(route.id))
-      .reduce((sum, route) => {
-        const weightInKg = route.weight.includes('kg')
-          ? parseFloat(route.weight)
-          : parseFloat(route.weight) * 1000;
-        const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
-        const totalEmission = emissionPerKg * weightInKg;
-        return {
-          emissions: sum.emissions + totalEmission,
-          cost: sum.cost + (route.cost || 0)
-        };
-      }, { emissions: 0, cost: 0 });
-
-    rows.push([
-      "Total",
-      "",
-      "",
-      totals.emissions.toFixed(2),
-      totals.cost.toFixed(2)
-    ]);
-
-    autoTable(doc, {
-      head: headers,
-      body: rows,
-      startY: 20,
-      styles: { fontSize: 10 },
-      headStyles: { fillColor: [20, 71, 230] },
-      willDrawCell: (data) => {
-        if (data.row.index === rows.length - 1) {
-          doc.setFont("helvetica", "bold");
-          doc.setFillColor(190, 219, 255);
-        }
-      }
-    });
-
-    doc.save("routes_summary.pdf");
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleAddRoute();
+    }
   };
 
   return (
@@ -491,9 +467,9 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         <FormGroup>
           <Label>Origin</Label>
       <AutocompleteInput 
-        value={origin}
-        onChange={(e) => setOrigin(e.target.value)}
-        onSelect={(place) => setOrigin(place)}
+        value={formData.origin}
+        onChange={(e) => setFormData(prev => ({ ...prev, origin: e.target.value }))}
+        onSelect={(place) => setFormData(prev => ({ ...prev, origin: place }))}
             placeholder="Enter origin"
             InputComponent={Input}
       />
@@ -502,9 +478,9 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         <FormGroup>
           <Label>Destination</Label>
       <AutocompleteInput 
-        value={destination}
-        onChange={(e) => setDestination(e.target.value)}
-        onSelect={(place) => setDestination(place)}
+        value={formData.destination}
+        onChange={(e) => setFormData(prev => ({ ...prev, destination: e.target.value }))}
+        onSelect={(place) => setFormData(prev => ({ ...prev, destination: place }))}
             placeholder="Enter destination"
             InputComponent={Input}
       />
@@ -515,23 +491,22 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
       <WeightContainer>
         <WeightInput
           type="number"
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-              placeholder="Weight"
+          value={formData.weight}
+          onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
+          onKeyDown={handleKeyDown}
+          placeholder="Enter weight in tonnes"
+          min="0"
+          step="0.1"
         />
         <UnitSelect
-          value={weightUnit}
-          onChange={(e) => setWeightUnit(e.target.value)}
+          value={formData.weightUnit}
+          onChange={(e) => setFormData(prev => ({ ...prev, weightUnit: e.target.value }))}
         >
           <option value="t">t</option>
           <option value="kg">kg</option>
         </UnitSelect>
       </WeightContainer>
         </WeightGroup>
-
-        <DownloadButton onClick={handleDownloadPDF}>
-          Download PDF
-        </DownloadButton>
       </FormRow>
 
       <FormGroup>
@@ -541,9 +516,9 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
             <TransportButton
               key={type.id}
               selected={type.id === 'all' 
-                ? selectedTransportTypes.length === 4 
-                : selectedTransportTypes.includes(type.id)}
-              onClick={() => handleTransportTypeClick(type.id)}
+                ? formData.transportTypes.length === 4 
+                : formData.transportTypes.includes(type.id)}
+              onClick={() => handleTransportTypeChange(type.id)}
             >
               {type.label}
             </TransportButton>
@@ -570,7 +545,7 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
             />
           </FormGroup>
 
-          {selectedTransportTypes.includes('truck') && (
+          {formData.transportTypes.includes('truck') && (
             <FormGroup>
               <Label>Truck Type</Label>
               <Select
@@ -587,7 +562,7 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
             </FormGroup>
           )}
 
-          {selectedTransportTypes.includes('rail') && (
+          {formData.transportTypes.includes('rail') && (
             <FormGroup>
               <Label>Train Type</Label>
               <Select

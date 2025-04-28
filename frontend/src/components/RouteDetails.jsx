@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import RouteInfoPopup from './RouteInfoPopup';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Styled components for layout and styling
 const Container = styled.div`
@@ -9,6 +11,7 @@ const Container = styled.div`
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
 `;
 
 const Title = styled.div`
@@ -16,6 +19,9 @@ const Title = styled.div`
   font-size: 1rem;
   font-weight: 500;
   margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const RouteDetailsTable = styled.div`
@@ -342,12 +348,80 @@ const FormGroup = styled.div`
   margin-bottom: 1.5rem;
 `;
 
+const RouteTypeContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+`;
+
+const RouteTypeButton = styled.button`
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.25rem;
+  background-color: ${props => props.selected ? '#2563eb' : 'white'};
+  color: ${props => props.selected ? 'white' : '#2563eb'};
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: ${props => props.selected ? '#1d4ed8' : '#f8fafc'};
+  }
+`;
+
+const StatCard = styled.div`
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+`;
+
+const StatTitle = styled.h3`
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+`;
+
+const StatValue = styled.span`
+  color: #4b5563;
+  font-size: 1rem;
+  font-weight: 400;
+`;
+
+const formatPrice = (price) => {
+  return `€${(Math.round(price * 100) / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
+
+const DownloadButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+`;
+
 // RouteDetails component displays a sortable table of routes with their details
 const RouteDetails = ({
   routes,
   setRoutes,
   selectedRoutes,
-  setSelectedRoutes
+  setSelectedRoutes,
+  routeType,
+  setRouteType,
+  routeTypes,
+  setRouteTypes
 }) => {
   // State for sorting functionality
   const [sortField, setSortField] = useState(null);
@@ -545,6 +619,22 @@ const RouteDetails = ({
     setSelectedRouteForInfo(null);
   };
 
+  // Update route type for a specific route
+  const handleRouteTypeChange = (routeId, type) => {
+    setRouteTypes(prev => ({
+      ...prev,
+      [routeId]: type
+    }));
+    
+    // Force a re-render of the map by updating the route type
+    setRouteType(type);
+  };
+
+  // Get the selected route type for a specific route
+  const getRouteType = (routeId) => {
+    return routeTypes[routeId] || 'lowestEmission';
+  };
+
   // Sort routes based on selected field and direction
   const sortedRoutes = [...routes].sort((a, b) => {
     if (!sortField) return 0;
@@ -599,7 +689,9 @@ const RouteDetails = ({
 
     try {
       const deliveryDate = new Date(route.deliveryDate);
-      const totalTime = route?.routeData?.lowestEmission?.totalTime || 0;
+      const currentRouteType = getRouteType(route.id);
+      const routeData = route.routeData?.[currentRouteType];
+      const totalTime = routeData?.totalTime || 0; // in hours
       
       // Convert hours to days and round up, then add 1 day buffer
       const daysNeeded = Math.ceil(totalTime / 24) + 1;
@@ -619,10 +711,159 @@ const RouteDetails = ({
     }
   };
 
+  const calculateCost = (routeData, weight) => {
+    if (!routeData || !weight) return 0;
+    
+    const weightInTonnes = weight.includes('kg') 
+      ? parseFloat(weight) / 1000 
+      : parseFloat(weight);
+
+    const costPerTonneKm = {
+      truck: 0.115,
+      rail: 0.017,
+      sea: 0.0013,
+      air: 0.18
+    };
+
+    let totalCost = 0;
+    const segments = routeData.geojson?.features || [];
+    
+    segments.forEach(segment => {
+      const distanceKm = segment.properties.distance;
+      const transport = segment.properties.transport.toLowerCase();
+      const costRate = costPerTonneKm[transport] || costPerTonneKm.truck;
+      const segmentCost = distanceKm * weightInTonnes * costRate;
+      totalCost += segmentCost;
+    });
+
+    return totalCost;
+  };
+
+  const calculateTotalCost = () => {
+    return routes
+      .filter(route => selectedRoutes.has(route.id))
+      .reduce((total, route) => {
+        const routeType = getRouteType(route.id);
+        return total + calculateCost(route.routeData[routeType], route.weight);
+      }, 0);
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add a green background rectangle for the title
+    doc.setFillColor(220, 252, 231); // Light green background
+    doc.rect(0, 0, 210, 20, 'F'); // Full width, 20mm height
+    
+    // Add a darker green border
+    doc.setDrawColor(34, 197, 94); // Green border
+    doc.rect(0, 0, 210, 20);
+    
+    // Add the title with green color and larger font
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(22, 163, 74); // Dark green text
+    doc.text("Sustainability Route Report", 105, 12, { align: 'center' });
+    
+    // Add a subtitle
+    doc.setFontSize(12);
+    doc.setTextColor(34, 197, 94); // Medium green
+    doc.text("Environmental Impact Analysis", 105, 18, { align: 'center' });
+
+    const headers = [["Origin", "Destination", "Weight", "CO2 (kg)", "Cost (€)", "CO2/t", "€/t"]];
+    const rows = routes
+      .filter(route => selectedRoutes.has(route.id))
+      .map(route => {
+        const routeType = getRouteType(route.id);
+        const routeData = route.routeData?.[routeType];
+        const weightInKg = route.weight.includes('kg')
+          ? parseFloat(route.weight)
+          : parseFloat(route.weight) * 1000;
+        const weightInTonnes = route.weight.includes('kg')
+          ? parseFloat(route.weight) / 1000
+          : parseFloat(route.weight);
+        const emissionPerKg = routeData?.totalEmission || 0;
+        const totalEmission = emissionPerKg * weightInKg;
+        const cost = calculateCost(routeData, route.weight);
+        const emissionPerTonne = totalEmission / weightInTonnes;
+        const costPerTonne = cost / weightInTonnes;
+
+        return [
+          route.origin,
+          route.destination,
+          route.weight,
+          totalEmission.toFixed(2),
+          cost.toFixed(2),
+          emissionPerTonne.toFixed(2),
+          costPerTonne.toFixed(2)
+        ];
+      });
+
+    const totals = routes
+      .filter(route => selectedRoutes.has(route.id))
+      .reduce((sum, route) => {
+        const routeType = getRouteType(route.id);
+        const routeData = route.routeData?.[routeType];
+        const weightInKg = route.weight.includes('kg')
+          ? parseFloat(route.weight)
+          : parseFloat(route.weight) * 1000;
+        const weightInTonnes = route.weight.includes('kg')
+          ? parseFloat(route.weight) / 1000
+          : parseFloat(route.weight);
+        const emissionPerKg = routeData?.totalEmission || 0;
+        const totalEmission = emissionPerKg * weightInKg;
+        const cost = calculateCost(routeData, route.weight);
+        const emissionPerTonne = totalEmission / weightInTonnes;
+        const costPerTonne = cost / weightInTonnes;
+
+        return {
+          emissions: sum.emissions + totalEmission,
+          cost: sum.cost + cost,
+          emissionPerTonne: sum.emissionPerTonne + emissionPerTonne,
+          costPerTonne: sum.costPerTonne + costPerTonne
+        };
+      }, { emissions: 0, cost: 0, emissionPerTonne: 0, costPerTonne: 0 });
+
+    rows.push([
+      "Total",
+      "",
+      "",
+      Math.round(totals.emissions).toLocaleString('en-US'),
+      Math.round(totals.cost).toLocaleString('en-US'),
+      (totals.emissionPerTonne / selectedRoutes.size).toFixed(2),
+      (totals.costPerTonne / selectedRoutes.size).toFixed(2)
+    ]);
+
+    autoTable(doc, {
+      head: headers,
+      body: rows,
+      startY: 30, // Increased to account for the larger header
+      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [34, 197, 94], // Green header
+        textColor: [255, 255, 255], // White text
+        fontStyle: 'bold'
+      },
+      willDrawCell: (data) => {
+        if (data.row.index === rows.length - 1) {
+          doc.setFont("helvetica", "bold");
+          doc.setFillColor(220, 252, 231); // Light green for totals row
+        }
+      }
+    });
+
+    doc.save("sustainability_report.pdf");
+  };
+
   return (
     // Component JSX structure
     <Container>
-      <Title>Route Details</Title>
+      <Title>
+        Route Details
+        <DownloadButton onClick={handleDownloadPDF}>
+          Download PDF
+        </DownloadButton>
+      </Title>
       <RouteDetailsTable>
         <TableHeader>Route</TableHeader>
         <TableHeader>Weight</TableHeader>
@@ -639,23 +880,42 @@ const RouteDetails = ({
         </TableHeader>
 
         {sortedRoutes.map((route) => {
+          const currentRouteType = getRouteType(route.id);
+          const routeData = route.routeData?.[currentRouteType];
+          
           const weightInKg = route.weight.includes('kg')
             ? parseFloat(route.weight)
             : parseFloat(route.weight) * 1000;
           const weightInTonnes = route.weight.includes('kg')
             ? parseFloat(route.weight) / 1000
             : parseFloat(route.weight);
-          const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+          const emissionPerKg = routeData?.totalEmission || 0;
           const totalEmission = emissionPerKg * weightInKg;
           const emissionPerTonne = totalEmission / weightInTonnes;
-          const costPerTonne = (route.cost || 0) / weightInTonnes;
+          const costPerTonne = calculateCost(routeData, route.weight) / weightInTonnes;
 
           return (
             <React.Fragment key={route.id}>
-              <TableCell>{route.name || `${route.origin} to ${route.destination}`}</TableCell>
+              <TableCell>
+                {route.name || `${route.origin} to ${route.destination}`}
+                <RouteTypeContainer>
+                  <RouteTypeButton
+                    selected={currentRouteType === 'lowestEmission'}
+                    onClick={() => handleRouteTypeChange(route.id, 'lowestEmission')}
+                  >
+                    Lowest Emission
+                  </RouteTypeButton>
+                  <RouteTypeButton
+                    selected={currentRouteType === 'fastest'}
+                    onClick={() => handleRouteTypeChange(route.id, 'fastest')}
+                  >
+                    Fastest
+                  </RouteTypeButton>
+                </RouteTypeContainer>
+              </TableCell>
               <TableCell>{route.weight}</TableCell>
               <TableCell>{emissionPerTonne.toFixed(2)}</TableCell>
-              <TableCell>{costPerTonne.toFixed(2)}</TableCell>
+              <TableCell>{formatPrice(costPerTonne)}</TableCell>
               <TableCell>{calculateLastSendingDate(route)}</TableCell>
               <TableCell>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

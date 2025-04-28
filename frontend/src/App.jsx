@@ -1,18 +1,15 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import './App.css';
-import Home from './pages/Home.jsx';
-import MapView from './pages/MapView.jsx';
-import MultipleRoutes from './pages/MultipleRoutes.jsx';
+import Home from './pages/Home';
+import MultipleRoutes from './pages/MultipleRoutes';
 
 const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/map" element={<MapView />} />
         <Route path="/multiple-routes" element={<MultipleRoutes />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

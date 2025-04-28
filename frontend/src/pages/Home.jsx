@@ -19,14 +19,7 @@ const Title = styled.h1`
   text-align: center;
 `;
 
-const ButtonContainer = styled.div`
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: center;
-`;
-
-const Button = styled.button`
+const StartButton = styled.button`
   padding: 1rem 2rem;
   font-size: 1.125rem;
   background-color: #2563eb;
@@ -53,14 +46,9 @@ const Home = () => {
   return (
     <Container>
       <Title>Demola Logistics</Title>
-      <ButtonContainer>
-        <Button onClick={() => navigate('/map')}>
-          Single Route
-        </Button>
-        <Button onClick={() => navigate('/multiple-routes')}>
-          Multiple Routes
-        </Button>
-      </ButtonContainer>
+      <StartButton onClick={() => navigate('/multiple-routes')}>
+        Start
+      </StartButton>
     </Container>
   );
 };

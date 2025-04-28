@@ -75,6 +75,7 @@ const Map = ({
   weightUnit = '', 
   routeType = 'lowestEmission',
   routeData,
+  routeTypes = {},
   onCalculateRoute,
   isLoading 
 }) => {
@@ -86,6 +87,7 @@ const Map = ({
   const [selectedRoute, setSelectedRoute] = useState(null);
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [showCityLabels, setShowCityLabels] = useState(false);
+  const [markers, setMarkers] = useState({});
 
   // Convert address to coordinates using Mapbox Geocoding API
   const getCoordinates = async (address) => {
@@ -111,6 +113,7 @@ const Map = ({
       style: 'mapbox://styles/mapbox/light-v11',
       center: [0, 20],
       zoom: 1.5,
+      maxZoom: 18,
       pitch: 0,
       bearing: 0,
       projection: 'mercator'
@@ -144,8 +147,10 @@ const Map = ({
     };
   }, []);
 
-  // Add markers effect for origin and destination
+  // Add markers effect for origins and destinations
   useEffect(() => {
+    if (!mapInitialized || !routeData) return;
+
     const addLocationMarker = async (location, type) => {
       if (!location || !map.current) return;
       
@@ -178,28 +183,42 @@ const Map = ({
         textEl.textContent = location;
         markerEl.appendChild(textEl);
 
-        new mapboxgl.Marker({
+        const marker = new mapboxgl.Marker({
           element: markerEl,
           anchor: 'center'
         })
         .setLngLat(coords)
         .addTo(map.current);
+
+        // Store marker in our markers object
+        setMarkers(prev => ({ ...prev, [location]: marker }));
       } catch (error) {
         console.error(`Error adding ${type} marker:`, error);
       }
     };
 
-    // Remove existing markers
-    const markers = document.getElementsByClassName('mapboxgl-marker');
-    while (markers.length > 0) {
-      markers[0].remove();
-    }
+    // Clear existing markers from the map
+    Object.values(markers).forEach(marker => marker.remove());
+    setMarkers({});
 
-    if (mapInitialized) {
-      addLocationMarker(origin, 'origin');
-      addLocationMarker(destination, 'destination');
+    // Add markers for all routes
+    if (Array.isArray(routeData)) {
+      routeData.forEach(route => {
+        if (route.origin) addLocationMarker(route.origin, 'origin');
+        if (route.destination) addLocationMarker(route.destination, 'destination');
+      });
+    } else {
+      if (routeData.origin) addLocationMarker(routeData.origin, 'origin');
+      if (routeData.destination) addLocationMarker(routeData.destination, 'destination');
     }
-  }, [origin, destination, mapInitialized]);
+  }, [routeData, mapInitialized]);
+
+  // Cleanup markers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(markers).forEach(marker => marker.remove());
+    };
+  }, []);
 
   // Trigger route calculation if needed.
   useEffect(() => {
@@ -211,54 +230,65 @@ const Map = ({
 
   // Update route effect
   useEffect(() => {
-    if (routeData && mapInitialized) {
+    if (!routeData || !mapInitialized) return;
+
+    const updateRouteAndDuration = () => {
       if (Array.isArray(routeData)) {
-        showMultipleRoutes(routeData);
+        showMultipleRoutes(routeData, routeTypes);
+        // Set route info for first route
+        const firstRoute = routeData[0];
+        if (firstRoute) {
+          const currentRoute = routeType === 'fastest' ? firstRoute.routeData.fastest : firstRoute.routeData.lowestEmission;
+          if (currentRoute && currentRoute.totalTime) {
+            setSelectedRoute({
+              duration: formatDuration(currentRoute.totalTime * 3600)
+            });
+          }
+        }
       } else {
         showSingleRoute(routeData);
-      }
-    }
-  }, [routeType, routeData, mapInitialized]);
-
-  // Route information update effect
-  useEffect(() => {
-    if (!routeData) return;
-
-    if (Array.isArray(routeData)) {
-      const firstRoute = routeData[0];
-      if (firstRoute) {
-        const currentRoute = routeType === 'fastest' ? firstRoute.fastest : firstRoute.lowestEmission;
-        if (currentRoute && currentRoute.geojson.features.length > 0) {
-          handleRouteClick(currentRoute.geojson.features[0], currentRoute);
+        // Set route info for single route
+        const currentRoute = routeType === 'fastest' ? routeData.fastest : routeData.lowestEmission;
+        if (currentRoute && currentRoute.totalTime) {
+          setSelectedRoute({
+            duration: formatDuration(currentRoute.totalTime * 3600)
+          });
         }
       }
-    } else {
-      const currentRoute = routeType === 'fastest' ? routeData.fastest : routeData.lowestEmission;
-      if (currentRoute && currentRoute.geojson.features.length > 0) {
-        handleRouteClick(currentRoute.geojson.features[0], currentRoute);
-      }
-    }
-  }, [routeType, routeData]);
+    };
+
+    updateRouteAndDuration();
+  }, [routeData, mapInitialized, routeType, routeTypes]);
 
   const showSingleRoute = (data) => {
     clearMapLayers();
-    const routeData = routeType === 'fastest' ? data.fastest : data.lowestEmission;
+    const currentRoute = routeType === 'fastest' ? data.fastest : data.lowestEmission;
     
+    if (!currentRoute) return;
+
     map.current.addSource('routes', {
       type: 'geojson',
-      data: routeData.geojson,
+      data: currentRoute.geojson,
     });
 
-    addRouteLayers(routeData);
-    fitMapToBounds(routeData.geojson.features);
+    addRouteLayers(currentRoute);
+    fitMapToBounds(currentRoute.geojson.features);
+
+    // Update duration when showing single route
+    if (currentRoute.totalTime) {
+      setSelectedRoute({
+        duration: formatDuration(currentRoute.totalTime * 3600)
+      });
+    }
   };
 
-  const showMultipleRoutes = (dataArray) => {
+  const showMultipleRoutes = (dataArray, routeTypes) => {
     clearMapLayers();
     const combinedGeojson = { type: 'FeatureCollection', features: [] };
     
-    dataArray.forEach(data => {
-      const chosenRoute = routeType === 'fastest' ? data.fastest : data.lowestEmission;
+    dataArray.forEach(route => {
+      const routeType = routeTypes[route.id] || 'lowestEmission';
+      const chosenRoute = routeType === 'fastest' ? route.routeData.fastest : route.routeData.lowestEmission;
       if (chosenRoute && chosenRoute.geojson) {
         combinedGeojson.features.push(...chosenRoute.geojson.features);
       }
@@ -272,6 +302,17 @@ const Map = ({
 
       addRouteLayers(combinedGeojson);
       fitMapToBounds(combinedGeojson.features);
+
+      // Update duration for the first route
+      const firstRoute = dataArray[0];
+      if (firstRoute) {
+        const currentRoute = routeType === 'fastest' ? firstRoute.routeData.fastest : firstRoute.routeData.lowestEmission;
+        if (currentRoute && currentRoute.totalTime) {
+          setSelectedRoute({
+            duration: formatDuration(currentRoute.totalTime * 3600)
+          });
+        }
+      }
     }
   };
 
@@ -311,7 +352,15 @@ const Map = ({
       map.current.on('click', `route-${transportType}`, (e) => {
         if (e.features.length > 0) {
           const clickedFeature = e.features[0];
-          handleRouteClick(clickedFeature, routeData);
+          const currentRoute = Array.isArray(routeData) 
+            ? routeData[0].routeData[routeType === 'fastest' ? 'fastest' : 'lowestEmission']
+            : routeData[routeType === 'fastest' ? 'fastest' : 'lowestEmission'];
+          
+          if (currentRoute && currentRoute.totalTime) {
+            setSelectedRoute({
+              duration: formatDuration(currentRoute.totalTime * 3600)
+            });
+          }
         }
       });
 
@@ -394,24 +443,11 @@ const Map = ({
 
   const handleRouteClick = (feature, route) => {
     setSelectedSegment(null);
-    
-    let weightValue = parseFloat(weight) || 1;
-    if (weightUnit === 't') {
-      weightValue = weightValue * 1000;
+    if (route && route.totalTime) {
+      setSelectedRoute({
+        duration: formatDuration(route.totalTime * 3600)
+      });
     }
-    
-    setSelectedRoute({
-      length: route.totalDistance ? route.totalDistance.toFixed(0) : '-',
-      duration: formatDuration(route.totalTime ? route.totalTime * 3600 : 0) || '-',
-      emissions: formatEmissions(route.totalEmission ? route.totalEmission * weightValue : 0) || '-',
-      segments: route.geojson && route.geojson.features
-        ? route.geojson.features.map(feature => ({
-            transport: translateTransportType(feature.properties.transport),
-            from: feature.properties.from || '-',
-            to: feature.properties.to || '-'
-          }))
-        : []
-    });
   };
 
   const translateTransportType = (type) => {
@@ -454,7 +490,7 @@ const Map = ({
       {selectedRoute && (
         <RouteInfoOverlay>
           <InfoSection>
-            <p><strong>Estimated Duration:</strong> {selectedRoute.duration}</p>
+            <p><strong>Duration:</strong> {selectedRoute.duration}</p>
           </InfoSection>
         </RouteInfoOverlay>
       )}

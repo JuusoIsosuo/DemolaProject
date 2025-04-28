@@ -45,6 +45,8 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
   const inputRef = useRef(null);
   const selectingRef = useRef(false);
   const justSelectedRef = useRef(false);
+  const debounceTimeoutRef = useRef(null);
+  const blurTimeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -99,8 +101,6 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
             fullName += `, ${countryCode}`;
           }
         
-          // If it's a unique place (like Helsinki), omit the region and only show the country.
-          // Ensure that numeric or non-standard region codes are skipped.
           if (!regionAbbreviation && countryCode) {
             fullName = `${place.text}, ${countryCode}`;
           }
@@ -117,8 +117,16 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
       }
     };
 
-    const debounce = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(debounce);
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    debounceTimeoutRef.current = setTimeout(fetchSuggestions, 200);
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
   }, [value]);
 
   useEffect(() => {
@@ -135,15 +143,21 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
   }, []);
 
   const handleBlur = () => {
-    setTimeout(() => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+    }
+
+    blurTimeoutRef.current = setTimeout(() => {
       if (!selectingRef.current) {
-        if (suggestions.length > 0 && value !== suggestions[0].fullName) {
+        // Only auto-select if we have suggestions and the current value doesn't match any suggestion
+        const hasMatchingSuggestion = suggestions.some(s => s.fullName === value);
+        if (suggestions.length > 0 && !hasMatchingSuggestion) {
           justSelectedRef.current = true;
           onSelect(suggestions[0].fullName);
         }
         setSuggestions([]);
       }
-    }, 100);
+    }, 300); // Increased delay to allow suggestions to load
   };
 
   const handleFocus = () => {
