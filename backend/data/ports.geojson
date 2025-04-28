@@ -583,6 +583,28 @@
         "type": "Point",
         "coordinates": [39.3, -6.8]
       }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Norrköping",
+        "country": "Sweden"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [16.2, 58.6]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Port of Gdansk",
+        "country": "Poland"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [18.7, 54.4]
+      }
     }
   ]
 }

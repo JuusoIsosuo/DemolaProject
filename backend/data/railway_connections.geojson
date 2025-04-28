@@ -18,6 +18,18 @@
       { "type": "Feature", "properties": { "route": ["Chengdu", "Dostyk"] }, "geometry": { "type": "LineString", "coordinates": [[104.0668, 30.5728], [73.1000, 49.7833]] } },
       { "type": "Feature", "properties": { "route": ["Moscow", "Chita"] }, "geometry": { "type": "LineString", "coordinates": [[37.6173, 55.7558], [113.5009, 52.0523]] } },
       { "type": "Feature", "properties": { "route": ["Tampere", "Helsinki"] }, "geometry": { "type": "LineString", "coordinates": [[23.7609, 61.4978], [24.9354, 60.1695]] } },
-      { "type": "Feature", "properties": { "route": ["Tallinn", "Moscow"] }, "geometry": { "type": "LineString", "coordinates": [[24.7536, 59.4370], [28.1871, 59.3772], [30.3141, 59.9311], [37.6173, 55.7558]] } }
+      { "type": "Feature", "properties": { "route": ["Tallinn", "Moscow"] }, "geometry": { "type": "LineString", "coordinates": [[24.7536, 59.4370], [28.1871, 59.3772], [30.3141, 59.9311], [37.6173, 55.7558]] } },
+      { "type": "Feature", "properties": { "route": ["Norrköping", "Ostrava"] }, "geometry": { "type": "LineString", "coordinates": [
+        [16.2, 58.6],
+        [13, 55.6],
+        [12.6, 55.7],
+        [11.5, 55.4],
+        [10.2, 55.3],
+        [9.5, 55.5],
+        [10.0, 53.5],
+        [13.4, 52.5],
+        [14.4, 50.1],
+        [18.3, 49.8]
+      ] } }
   ]
 }

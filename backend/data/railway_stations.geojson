@@ -21,6 +21,8 @@
     { "type": "Feature", "properties": { "name": "Tehran" }, "geometry": { "type": "Point", "coordinates": [51.389, 35.6892] } },
     { "type": "Feature", "properties": { "name": "Mumbai" }, "geometry": { "type": "Point", "coordinates": [72.8777, 19.076] } },
     { "type": "Feature", "properties": { "name": "Tallinn" }, "geometry": { "type": "Point", "coordinates": [24.7536, 59.4370] } },
-    { "type": "Feature", "properties": { "name": "Tampere" }, "geometry": { "type": "Point", "coordinates": [23.7606, 61.4978] } }
+    { "type": "Feature", "properties": { "name": "Tampere" }, "geometry": { "type": "Point", "coordinates": [23.7606, 61.4978] } },
+    { "type": "Feature", "properties": { "name": "Norrköping" }, "geometry": { "type": "Point", "coordinates": [16.2, 58.6] } },
+    { "type": "Feature", "properties": { "name": "Ostrava" }, "geometry": { "type": "Point", "coordinates": [18.3, 49.8] } }
   ]
 }
