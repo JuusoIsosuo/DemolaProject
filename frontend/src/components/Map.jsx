@@ -114,6 +114,7 @@ const Map = ({
       center: [0, 20],
       zoom: 1.5,
       maxZoom: 18,
+      minZoom: 1,
       pitch: 0,
       bearing: 0,
       projection: 'mercator'
