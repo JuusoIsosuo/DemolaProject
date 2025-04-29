@@ -901,6 +901,7 @@ const RouteDetails = ({
         <RouteInfoPopup
           route={selectedRouteForInfo}
           onClose={handleCloseInfo}
+          routeType={getRouteType(selectedRouteForInfo.id)}
         />
       )}
 
