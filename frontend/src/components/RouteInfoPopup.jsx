@@ -122,20 +122,20 @@ const ColorBox = styled.div`
 
 const COLORS = ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#db2777'];
 
-const RouteInfoPopup = ({ route, onClose }) => {
+const RouteInfoPopup = ({ route, onClose, routeType }) => {
   if (!route) {
     console.error('No route provided to RouteInfoPopup');
     return null;
   }
 
-  const { routeData, origin, destination, weight, sendingDate, cost } = route;
+  const { routeData, origin, destination, weight, sendDate, cost } = route;
   
   // Convert weight to kg consistently with StatsView
   const weightInKg = weight.includes('kg') 
     ? parseFloat(weight)
     : parseFloat(weight) * 1000;
 
-  const currentRoute = routeData?.lowestEmission; // Match StatsView's path
+  const currentRoute = routeData?.[routeType || 'lowestEmission']; // Use provided routeType
   const totalTime = currentRoute?.totalTime || 0;
   const totalDistance = currentRoute?.totalDistance || 0;
   
@@ -145,16 +145,28 @@ const RouteInfoPopup = ({ route, onClose }) => {
 
   const formatDuration = (hours) => {
     const days = Math.floor(hours / 24);
-    const remainingHours = Math.round(hours % 24);
+    const remainingHours = Math.floor(hours % 24);
+    const minutes = Math.round((hours - Math.floor(hours)) * 60);
+    
     if (days > 0) {
       return `${days}d ${remainingHours}h`;
     }
-    return `${remainingHours}h`;
+    return `${remainingHours}h ${minutes}m`;
   };
 
   const formatDate = (date) => {
+    if (!date) {
+      // If no date is provided, use today's date
+      const today = new Date();
+      const day = today.getDate().toString().padStart(2, '0');
+      const month = (today.getMonth() + 1).toString().padStart(2, '0');
+      return `${day}.${month}.`;
+    }
     try {
-      return new Date(date).toLocaleString();
+      const d = new Date(date);
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      return `${day}.${month}.`;
     } catch (error) {
       console.error('Invalid date:', error);
       return 'Not available';
@@ -270,13 +282,16 @@ const RouteInfoPopup = ({ route, onClose }) => {
   console.log('Processed cost data:', costData);
 
   return (
-    <PopupOverlay onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <PopupContent>
+    <PopupOverlay onClick={onClose}>
+      <PopupContent onClick={e => e.stopPropagation()}>
         <CloseButton onClick={onClose}>×</CloseButton>
+        <h2 style={{ marginBottom: '2rem', color: '#1e293b' }}>
+          {route.name || `${origin} to ${destination}`}
+        </h2>
         
         <InfoGrid>
           <InfoSection>
-            <h3>Route Details</h3>
+            <h3>Route Information</h3>
             <InfoItem>
               <span>Origin:</span>
               <span>{origin}</span>
@@ -290,13 +305,21 @@ const RouteInfoPopup = ({ route, onClose }) => {
               <span>{weight}</span>
             </InfoItem>
             <InfoItem>
-              <span>Total Duration:</span>
-              <span>{formatDuration(totalTime)}</span>
+              <span>Send Date:</span>
+              <span>{formatDate(sendDate)}</span>
             </InfoItem>
             <InfoItem>
               <span>Total Distance:</span>
               <span>{Math.round(totalDistance)} km</span>
             </InfoItem>
+            <InfoItem>
+              <span>Total Time:</span>
+              <span>{formatDuration(totalTime)}</span>
+            </InfoItem>
+          </InfoSection>
+
+          <InfoSection>
+            <h3>Route Details</h3>
             <InfoItem>
               <span>Total Emissions:</span>
               <span>{formatEmission(totalEmission)}</span>
@@ -304,18 +327,6 @@ const RouteInfoPopup = ({ route, onClose }) => {
             <InfoItem>
               <span>Total Cost:</span>
               <span>{cost.toFixed(2)} €</span>
-            </InfoItem>
-          </InfoSection>
-
-          <InfoSection>
-            <h3>Time Information</h3>
-            <InfoItem>
-              <span>Sending Date:</span>
-              <span>{formatDate(sendingDate)}</span>
-            </InfoItem>
-            <InfoItem>
-              <span>ETA:</span>
-              <span>{formatDate(new Date(sendingDate).getTime() + totalTime * 3600000)}</span>
             </InfoItem>
           </InfoSection>
         </InfoGrid>

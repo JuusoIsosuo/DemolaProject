@@ -39,35 +39,6 @@ const ToggleButton = styled.button`
   }
 `;
 
-const RouteInfoOverlay = styled.div`
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 1rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-  backdrop-filter: blur(8px);
-  width: 280px;
-  z-index: 1000;
-`;
-
-const InfoSection = styled.div`
-  margin-bottom: 1rem;
-  
-  h3 {
-    font-size: 0.9rem;
-    color: #4b5563;
-    margin-bottom: 0.5rem;
-  }
-
-  p {
-    margin: 0.25rem 0;
-    font-size: 0.875rem;
-    color: #1f2937;
-  }
-`;
-
 const Map = ({ 
   origin = '', 
   destination = '',
@@ -81,8 +52,6 @@ const Map = ({
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [mapInitialized, setMapInitialized] = useState(false);
-  const [selectedRoute, setSelectedRoute] = useState(null);
-  const [selectedSegment, setSelectedSegment] = useState(null);
   const [showCityLabels, setShowCityLabels] = useState(false);
   const [markers, setMarkers] = useState({});
 
@@ -232,25 +201,8 @@ const Map = ({
     const updateRouteAndDuration = () => {
       if (Array.isArray(routeData)) {
         showMultipleRoutes(routeData, routeTypes);
-        // Set route info for first route
-        const firstRoute = routeData[0];
-        if (firstRoute) {
-          const currentRoute = routeType === 'fastest' ? firstRoute.routeData.fastest : firstRoute.routeData.lowestEmission;
-          if (currentRoute && currentRoute.totalTime) {
-            setSelectedRoute({
-              duration: formatDuration(currentRoute.totalTime * 3600)
-            });
-          }
-        }
       } else {
         showSingleRoute(routeData);
-        // Set route info for single route
-        const currentRoute = routeType === 'fastest' ? routeData.fastest : routeData.lowestEmission;
-        if (currentRoute && currentRoute.totalTime) {
-          setSelectedRoute({
-            duration: formatDuration(currentRoute.totalTime * 3600)
-          });
-        }
       }
     };
 
@@ -270,13 +222,6 @@ const Map = ({
 
     addRouteLayers(currentRoute);
     fitMapToBounds(currentRoute.geojson.features);
-
-    // Update duration when showing single route
-    if (currentRoute.totalTime) {
-      setSelectedRoute({
-        duration: formatDuration(currentRoute.totalTime * 3600)
-      });
-    }
   };
 
   const showMultipleRoutes = (dataArray, routeTypes) => {
@@ -299,17 +244,6 @@ const Map = ({
 
       addRouteLayers(combinedGeojson);
       fitMapToBounds(combinedGeojson.features);
-
-      // Update duration for the first route
-      const firstRoute = dataArray[0];
-      if (firstRoute) {
-        const currentRoute = routeType === 'fastest' ? firstRoute.routeData.fastest : firstRoute.routeData.lowestEmission;
-        if (currentRoute && currentRoute.totalTime) {
-          setSelectedRoute({
-            duration: formatDuration(currentRoute.totalTime * 3600)
-          });
-        }
-      }
     }
   };
 
@@ -344,21 +278,6 @@ const Map = ({
           'line-dasharray': getRouteDashArray(transportType)
         },
         filter: ['==', 'transport', transportType],
-      });
-
-      map.current.on('click', `route-${transportType}`, (e) => {
-        if (e.features.length > 0) {
-          const clickedFeature = e.features[0];
-          const currentRoute = Array.isArray(routeData) 
-            ? routeData[0].routeData[routeType === 'fastest' ? 'fastest' : 'lowestEmission']
-            : routeData[routeType === 'fastest' ? 'fastest' : 'lowestEmission'];
-          
-          if (currentRoute && currentRoute.totalTime) {
-            setSelectedRoute({
-              duration: formatDuration(currentRoute.totalTime * 3600)
-            });
-          }
-        }
       });
 
       map.current.on('mouseenter', `route-${transportType}`, () => {
@@ -456,13 +375,6 @@ const Map = ({
       <ToggleButton onClick={toggleCityLabels}>
         {showCityLabels ? 'Hide City Labels' : 'Show City Labels'}
       </ToggleButton>
-      {selectedRoute && (
-        <RouteInfoOverlay>
-          <InfoSection>
-            <p><strong>Duration:</strong> {selectedRoute.duration}</p>
-          </InfoSection>
-        </RouteInfoOverlay>
-      )}
     </MapContainer>
   );
 };
