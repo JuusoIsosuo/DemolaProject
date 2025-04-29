@@ -325,14 +325,27 @@ const RouteTypeButton = styled.button`
   padding: 0.25rem 0.5rem;
   border: 1px solid #e2e8f0;
   border-radius: 0.25rem;
-  background-color: ${props => props.selected ? '#2563eb' : 'white'};
-  color: ${props => props.selected ? 'white' : '#2563eb'};
+  background-color: ${props => props.selected ? 
+    (props.children === 'Lowest Emission' ? '#10b981' : '#3b82f6') 
+    : 'white'};
+  color: ${props => props.selected ? 'white' : '#374151'};
   font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  min-width: 100px;
 
   &:hover {
-    background-color: ${props => props.selected ? '#1d4ed8' : '#f8fafc'};
+    background-color: ${props => props.selected ? 
+      (props.children === 'Lowest Emission' ? '#059669' : '#2563eb') 
+      : '#f3f4f6'};
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px ${props => props.selected ? 
+      (props.children === 'Lowest Emission' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)') 
+      : 'rgba(59, 130, 246, 0.1)'};
   }
 `;
 
@@ -377,6 +390,8 @@ const RouteDetails = ({
   const [modifiedFragile, setModifiedFragile] = useState(false);
   const [modifiedSendDate, setModifiedSendDate] = useState('');
   const [selectedRouteForInfo, setSelectedRouteForInfo] = useState(null);
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
 
   const transportTypes = [
     { id: 'all', label: 'All' },
@@ -575,6 +590,44 @@ const RouteDetails = ({
     return routeTypes[routeId] || 'lowestEmission';
   };
 
+  const calculateCost = (routeData, weight) => {
+    if (!routeData || !weight) return 0;
+    
+    const weightInTonnes = weight.includes('kg') 
+      ? parseFloat(weight) / 1000 
+      : parseFloat(weight);
+
+    const costPerTonneKm = {
+      truck: 0.115,
+      rail: 0.017,
+      sea: 0.0013,
+      air: 0.18
+    };
+
+    let totalCost = 0;
+    const segments = routeData.geojson?.features || [];
+    
+    segments.forEach(segment => {
+      const distanceKm = segment.properties.distance;
+      const transport = segment.properties.transport.toLowerCase();
+      const costRate = costPerTonneKm[transport] || costPerTonneKm.truck;
+      const segmentCost = distanceKm * weightInTonnes * costRate;
+      totalCost += segmentCost;
+    });
+
+    return totalCost;
+  };
+
+  // Handle sort field change
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   // Sort routes based on selected field and direction
   const sortedRoutes = [...routes].sort((a, b) => {
     if (!sortField) return 0;
@@ -588,28 +641,33 @@ const RouteDetails = ({
         : bValue.localeCompare(aValue);
     }
     
+    const aRouteType = getRouteType(a.id);
+    const bRouteType = getRouteType(b.id);
+    
     if (sortField === 'emissions') {
       const aWeightInKg = a.weight.includes('kg') ? parseFloat(a.weight) : parseFloat(a.weight) * 1000;
       const bWeightInKg = b.weight.includes('kg') ? parseFloat(b.weight) : parseFloat(b.weight) * 1000;
-      const aEmissionPerKg = a.routeData?.lowestEmission?.totalEmission || 0;
-      const bEmissionPerKg = b.routeData?.lowestEmission?.totalEmission || 0;
+      const aEmissionPerKg = a.routeData?.[aRouteType]?.totalEmission || 0;
+      const bEmissionPerKg = b.routeData?.[bRouteType]?.totalEmission || 0;
       aValue = aEmissionPerKg * aWeightInKg;
       bValue = bEmissionPerKg * bWeightInKg;
     } else if (sortField === 'emissionsPerTonne') {
       const aWeightInTonnes = a.weight.includes('kg') ? parseFloat(a.weight) / 1000 : parseFloat(a.weight);
       const bWeightInTonnes = b.weight.includes('kg') ? parseFloat(b.weight) / 1000 : parseFloat(b.weight);
-      const aEmissionPerKg = a.routeData?.lowestEmission?.totalEmission || 0;
-      const bEmissionPerKg = b.routeData?.lowestEmission?.totalEmission || 0;
+      const aEmissionPerKg = a.routeData?.[aRouteType]?.totalEmission || 0;
+      const bEmissionPerKg = b.routeData?.[bRouteType]?.totalEmission || 0;
       aValue = (aEmissionPerKg * (aWeightInTonnes * 1000)) / aWeightInTonnes;
       bValue = (bEmissionPerKg * (bWeightInTonnes * 1000)) / bWeightInTonnes;
     } else if (sortField === 'cost') {
-      aValue = a.cost || 0;
-      bValue = b.cost || 0;
+      aValue = calculateCost(a.routeData?.[aRouteType], a.weight);
+      bValue = calculateCost(b.routeData?.[bRouteType], b.weight);
     } else if (sortField === 'costPerTonne') {
       const aWeightInTonnes = a.weight.includes('kg') ? parseFloat(a.weight) / 1000 : parseFloat(a.weight);
       const bWeightInTonnes = b.weight.includes('kg') ? parseFloat(b.weight) / 1000 : parseFloat(b.weight);
-      aValue = (a.cost || 0) / aWeightInTonnes;
-      bValue = (b.cost || 0) / bWeightInTonnes;
+      const aCost = calculateCost(a.routeData?.[aRouteType], a.weight);
+      const bCost = calculateCost(b.routeData?.[bRouteType], b.weight);
+      aValue = aCost / aWeightInTonnes;
+      bValue = bCost / bWeightInTonnes;
     } else if (sortField === 'weight') {
       const getWeightInTonnes = (route) => {
         const weight = parseFloat(route.weight);
@@ -669,34 +727,6 @@ const RouteDetails = ({
       console.error('Error formatting send date:', error);
       return '';
     }
-  };
-
-  const calculateCost = (routeData, weight) => {
-    if (!routeData || !weight) return 0;
-    
-    const weightInTonnes = weight.includes('kg') 
-      ? parseFloat(weight) / 1000 
-      : parseFloat(weight);
-
-    const costPerTonneKm = {
-      truck: 0.115,
-      rail: 0.017,
-      sea: 0.0013,
-      air: 0.18
-    };
-
-    let totalCost = 0;
-    const segments = routeData.geojson?.features || [];
-    
-    segments.forEach(segment => {
-      const distanceKm = segment.properties.distance;
-      const transport = segment.properties.transport.toLowerCase();
-      const costRate = costPerTonneKm[transport] || costPerTonneKm.truck;
-      const segmentCost = distanceKm * weightInTonnes * costRate;
-      totalCost += segmentCost;
-    });
-
-    return totalCost;
   };
 
   const handleDownloadPDF = () => {
@@ -816,18 +846,39 @@ const RouteDetails = ({
         </DownloadButton>
       </Title>
       <RouteDetailsTable>
-        <TableHeader>Route</TableHeader>
-        <TableHeader>Weight</TableHeader>
-        <TableHeader>CO₂/t</TableHeader>
-        <TableHeader>€/t</TableHeader>
+        <TableHeader onClick={() => handleSort('route')} style={{ cursor: 'pointer' }}>
+          Route {sortField === 'route' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
+        <TableHeader onClick={() => handleSort('weight')} style={{ cursor: 'pointer' }}>
+          Weight {sortField === 'weight' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
+        <TableHeader onClick={() => handleSort('emissionsPerTonne')} style={{ cursor: 'pointer' }}>
+          CO₂/t {sortField === 'emissionsPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
+        <TableHeader onClick={() => handleSort('costPerTonne')} style={{ cursor: 'pointer' }}>
+          €/t {sortField === 'costPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
         <TableHeader>Send date</TableHeader>
         <TableHeader>
-          <Checkbox
-            type="checkbox"
-            checked={selectedRoutes.size === routes.length}
-            onChange={(e) => handleSelectAll(e.target.checked)}
-          />
-          Actions
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
+            <Checkbox
+              type="checkbox"
+              checked={selectedRoutes.size === routes.length}
+              onChange={(e) => handleSelectAll(e.target.checked)}
+            />
+            <span>Actions</span>
+            {selectedRoutes.size > 0 && (
+              <ActionButton 
+                onClick={() => {
+                  setRoutes(routes.filter(route => !selectedRoutes.has(route.id)));
+                  setSelectedRoutes(new Set());
+                }}
+                style={{ marginLeft: 'auto' }}
+              >
+                Delete Selected
+              </ActionButton>
+            )}
+          </div>
         </TableHeader>
 
         {sortedRoutes.map((route) => {

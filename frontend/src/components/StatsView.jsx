@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from '@emotion/styled';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import AnimatedCounter from './AnimatedCounter';
 
 // Styled components for layout and styling
 const Container = styled.div`
@@ -182,9 +183,9 @@ const StatsView = ({ routes, selectedRoutes, routeTypes = {} }) => {
 
   const formatEmission = (emission) => {
     if (emission >= 1000) {
-      return `${(emission / 1000).toFixed(2)} t CO₂e`;
+      return `${(emission / 1000).toFixed(2)} t CO₂`;
     }
-    return `${emission.toFixed(2)} kg CO₂e`;
+    return `${emission.toFixed(2)} kg CO₂`;
   };
 
   const formatPrice = (price) => {
@@ -251,11 +252,19 @@ const StatsView = ({ routes, selectedRoutes, routeTypes = {} }) => {
       <StatsGrid>
         <StatCard>
           <StatTitle>Total Emissions</StatTitle>
-          <StatValue>{formatEmission(stats.totalEmission)}</StatValue>
+          <AnimatedCounter 
+            value={Math.round(stats.totalEmission)} 
+            suffix=" kg CO₂"
+            duration={2000}
+          />
         </StatCard>
         <StatCard>
           <StatTitle>Total Cost</StatTitle>
-          <StatValue>{formatPrice(stats.totalCost)}</StatValue>
+          <AnimatedCounter 
+            value={Math.round(stats.totalCost)} 
+            prefix="€"
+            duration={2000}
+          />
         </StatCard>
       </StatsGrid>
 
