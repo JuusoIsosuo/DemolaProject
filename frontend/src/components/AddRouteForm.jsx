@@ -406,7 +406,6 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         air: 0.18
       };
 
-      // Calculate cost for both fastest and lowestEmission routes
       const calculateRouteCost = (routeData) => {
         let cost = 0;
         if (routeData?.geojson?.features) {
@@ -421,30 +420,83 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
         return cost;
       };
 
-      const newRoute = {
-        id: Date.now(),
-        origin: formData.origin,
-        destination: formData.destination,
-        routeData: {
-          fastest: response.data.fastest,
-          lowestEmission: response.data.lowestEmission,
-          useSea,
-          useAir,
-          useRail
-        },
-        weight: `${formData.weight}${formData.weightUnit}`,
-        cost: calculateRouteCost(response.data.lowestEmission),
-        name: routeName || `${formData.origin} to ${formData.destination}`,
-        deliveryDate: selectedDate,
-        isFragile: isFragile,
-        isContinuousDelivery: isContinuousDelivery,
-        frequency: frequency,
-        startDate: startDate,
-        endDate: endDate
+      const createRoute = (deliveryDate) => {
+        // Calculate send date based on delivery date and route time
+        let sendDate = '';
+        if (deliveryDate) {
+          const deliveryDateObj = new Date(deliveryDate);
+          const routeData = response.data.lowestEmission;
+          const totalTime = routeData?.totalTime || 0; // in hours
+          const daysNeeded = Math.ceil(totalTime / 24) + 1;
+          const sendDateObj = new Date(deliveryDateObj);
+          sendDateObj.setDate(deliveryDateObj.getDate() - daysNeeded);
+          sendDate = sendDateObj.toISOString().split('T')[0];
+        }
+
+        return {
+          id: Date.now() + Math.random(), // Ensure unique IDs
+          origin: formData.origin,
+          destination: formData.destination,
+          routeData: {
+            fastest: response.data.fastest,
+            lowestEmission: response.data.lowestEmission,
+            useSea,
+            useAir,
+            useRail
+          },
+          weight: `${formData.weight}${formData.weightUnit}`,
+          cost: calculateRouteCost(response.data.lowestEmission),
+          name: routeName || `${formData.origin} to ${formData.destination}`,
+          deliveryDate: deliveryDate,
+          sendDate: sendDate, // Add the calculated send date
+          isFragile: isFragile,
+          isContinuousDelivery: isContinuousDelivery,
+          frequency: frequency,
+          startDate: startDate,
+          endDate: endDate
+        };
       };
 
-      setRoutes(prevRoutes => [...prevRoutes, newRoute]);
-      setSelectedRoutes(prev => new Set([...prev, newRoute.id]));
+      if (isContinuousDelivery && startDate && endDate && frequency) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const newRoutes = [];
+        const selectedRouteIds = new Set();
+
+        // Calculate dates based on frequency
+        let currentDate = new Date(start);
+        while (currentDate <= end) {
+          const route = createRoute(currentDate.toISOString().split('T')[0]);
+          newRoutes.push(route);
+          selectedRouteIds.add(route.id);
+
+          // Increment date based on frequency
+          switch (frequency) {
+            case 'daily':
+              currentDate.setDate(currentDate.getDate() + 1);
+              break;
+            case 'weekly':
+              currentDate.setDate(currentDate.getDate() + 7);
+              break;
+            case 'biweekly':
+              currentDate.setDate(currentDate.getDate() + 14);
+              break;
+            case 'monthly':
+              currentDate.setMonth(currentDate.getMonth() + 1);
+              break;
+            default:
+              currentDate.setDate(currentDate.getDate() + 1);
+          }
+        }
+
+        setRoutes(prevRoutes => [...prevRoutes, ...newRoutes]);
+        setSelectedRoutes(prev => new Set([...prev, ...selectedRouteIds]));
+      } else {
+        const newRoute = createRoute(selectedDate);
+        setRoutes(prevRoutes => [...prevRoutes, newRoute]);
+        setSelectedRoutes(prev => new Set([...prev, newRoute.id]));
+      }
+
       return true;
     } catch (error) {
       console.error("Error adding route:", error);
@@ -575,14 +627,16 @@ const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, is
             </FormGroup>
           )}
 
-          <FormGroup>
-            <Label>Delivery Date</Label>
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
-          </FormGroup>
+          {!isContinuousDelivery && (
+            <FormGroup>
+              <Label>Delivery Date</Label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </FormGroup>
+          )}
 
           <FormCheckboxContainer>
             <FormCheckbox

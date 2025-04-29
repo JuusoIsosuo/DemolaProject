@@ -432,8 +432,7 @@ const RouteDetails = ({
   const [modifiedWeightUnit, setModifiedWeightUnit] = useState('t');
   const [modifiedRouteName, setModifiedRouteName] = useState('');
   const [modifiedFragile, setModifiedFragile] = useState(false);
-  const [modifiedContinuousDelivery, setModifiedContinuousDelivery] = useState(false);
-  const [modifiedDeliveryDate, setModifiedDeliveryDate] = useState('');
+  const [modifiedSendDate, setModifiedSendDate] = useState('');
   const [modifiedFrequency, setModifiedFrequency] = useState('weekly');
   const [modifiedStartDate, setModifiedStartDate] = useState('');
   const [modifiedEndDate, setModifiedEndDate] = useState('');
@@ -519,11 +518,25 @@ const RouteDetails = ({
     setModifiedWeightUnit(weightUnit);
     setModifiedRouteName(route.name || `${route.origin} to ${route.destination}`);
     setModifiedFragile(route.isFragile || false);
-    setModifiedContinuousDelivery(route.isContinuousDelivery || false);
-    setModifiedDeliveryDate(route.deliveryDate || '');
-    setModifiedFrequency(route.frequency || 'weekly');
-    setModifiedStartDate(route.startDate || '');
-    setModifiedEndDate(route.endDate || '');
+    
+    // Set send date - use existing send date if available
+    if (route.sendDate) {
+      setModifiedSendDate(route.sendDate);
+    } else {
+      // If no send date exists, calculate it from delivery date
+      if (route.deliveryDate) {
+        const deliveryDate = new Date(route.deliveryDate);
+        const currentRouteType = getRouteType(route.id);
+        const routeData = route.routeData?.[currentRouteType];
+        const totalTime = routeData?.totalTime || 0; // in hours
+        const daysNeeded = Math.ceil(totalTime / 24) + 1;
+        const sendDate = new Date(deliveryDate);
+        sendDate.setDate(deliveryDate.getDate() - daysNeeded);
+        setModifiedSendDate(sendDate.toISOString().split('T')[0]);
+      } else {
+        setModifiedSendDate('');
+      }
+    }
   };
 
   const handleCloseModal = () => {
@@ -593,11 +606,8 @@ const RouteDetails = ({
         weight: `${modifiedWeight}${modifiedWeightUnit}`,
         name: modifiedRouteName,
         isFragile: modifiedFragile,
-        isContinuousDelivery: modifiedContinuousDelivery,
-        deliveryDate: modifiedDeliveryDate,
-        frequency: modifiedFrequency,
-        startDate: modifiedStartDate,
-        endDate: modifiedEndDate
+        sendDate: modifiedSendDate, // Store the send date directly
+        deliveryDate: selectedRouteForModification.deliveryDate // Keep the original delivery date
       };
 
       setRoutes(routes.map(route => 
@@ -685,28 +695,48 @@ const RouteDetails = ({
   });
 
   const calculateLastSendingDate = (route) => {
-    if (!route?.deliveryDate) return '';
+    if (!route?.sendDate) {
+      // If no send date, calculate it from delivery date
+      if (!route?.deliveryDate) {
+        // Return today's date if both dates are empty
+        const today = new Date();
+        const day = today.getDate().toString().padStart(2, '0');
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        return `${day}.${month}.`;
+      }
 
+      try {
+        const deliveryDate = new Date(route.deliveryDate);
+        const currentRouteType = getRouteType(route.id);
+        const routeData = route.routeData?.[currentRouteType];
+        const totalTime = routeData?.totalTime || 0; // in hours
+        
+        // Convert hours to days and round up, then add 1 day buffer
+        const daysNeeded = Math.ceil(totalTime / 24) + 1;
+        
+        // Calculate send date from delivery date
+        const sendDate = new Date(deliveryDate);
+        sendDate.setDate(deliveryDate.getDate() - daysNeeded);
+        
+        // Format date as DD.MM.
+        const day = sendDate.getDate().toString().padStart(2, '0');
+        const month = (sendDate.getMonth() + 1).toString().padStart(2, '0');
+        
+        return `${day}.${month}.`;
+      } catch (error) {
+        console.error('Error calculating send date:', error);
+        return '';
+      }
+    }
+
+    // If send date exists, use it directly
     try {
-      const deliveryDate = new Date(route.deliveryDate);
-      const currentRouteType = getRouteType(route.id);
-      const routeData = route.routeData?.[currentRouteType];
-      const totalTime = routeData?.totalTime || 0; // in hours
-      
-      // Convert hours to days and round up, then add 1 day buffer
-      const daysNeeded = Math.ceil(totalTime / 24) + 1;
-      
-      // Calculate last sending date
-      const lastSendingDate = new Date(deliveryDate);
-      lastSendingDate.setDate(deliveryDate.getDate() - daysNeeded);
-      
-      // Format date as DD.MM.
-      const day = lastSendingDate.getDate().toString().padStart(2, '0');
-      const month = (lastSendingDate.getMonth() + 1).toString().padStart(2, '0');
-      
+      const sendDate = new Date(route.sendDate);
+      const day = sendDate.getDate().toString().padStart(2, '0');
+      const month = (sendDate.getMonth() + 1).toString().padStart(2, '0');
       return `${day}.${month}.`;
     } catch (error) {
-      console.error('Error calculating last sending date:', error);
+      console.error('Error formatting send date:', error);
       return '';
     }
   };
@@ -869,7 +899,7 @@ const RouteDetails = ({
         <TableHeader>Weight</TableHeader>
         <TableHeader>CO₂/t</TableHeader>
         <TableHeader>€/t</TableHeader>
-        <TableHeader>Last Send</TableHeader>
+        <TableHeader>Send date</TableHeader>
         <TableHeader>
           <Checkbox
             type="checkbox"
@@ -996,65 +1026,16 @@ const RouteDetails = ({
             </ModalSection>
 
             <ModalSection>
-              <ModalLabel>Delivery Date</ModalLabel>
+              <ModalLabel>Send Date</ModalLabel>
               <ModalInput
                 type="date"
-                value={modifiedDeliveryDate}
-                onChange={(e) => setModifiedDeliveryDate(e.target.value)}
+                value={modifiedSendDate}
+                onChange={(e) => setModifiedSendDate(e.target.value)}
                 style={{ width: '200px' }}
               />
             </ModalSection>
 
             <ModalSection>
-              <FormCheckboxContainer>
-                <FormCheckbox
-                  type="checkbox"
-                  checked={modifiedContinuousDelivery}
-                  onChange={(e) => setModifiedContinuousDelivery(e.target.checked)}
-                  id="modify-continuous-delivery"
-                />
-                <FormCheckboxLabel htmlFor="modify-continuous-delivery">
-                  Continuous Delivery
-                </FormCheckboxLabel>
-              </FormCheckboxContainer>
-
-              {modifiedContinuousDelivery && (
-                <>
-                  <FormGroup>
-                    <ModalLabel>Frequency</ModalLabel>
-                    <FrequencySelect
-                      value={modifiedFrequency}
-                      onChange={(e) => setModifiedFrequency(e.target.value)}
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="biweekly">Bi-weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </FrequencySelect>
-                  </FormGroup>
-
-                  <FormGroup>
-                    <ModalLabel>Date Range</ModalLabel>
-                    <DateRangeContainer>
-                      <ModalInput
-                        type="date"
-                        value={modifiedStartDate}
-                        onChange={(e) => setModifiedStartDate(e.target.value)}
-                        placeholder="Start Date"
-                        style={{ width: '150px' }}
-                      />
-                      <ModalInput
-                        type="date"
-                        value={modifiedEndDate}
-                        onChange={(e) => setModifiedEndDate(e.target.value)}
-                        placeholder="End Date"
-                        style={{ width: '150px' }}
-                      />
-                    </DateRangeContainer>
-                  </FormGroup>
-                </>
-              )}
-
               <FormCheckboxContainer>
                 <FormCheckbox
                   type="checkbox"
