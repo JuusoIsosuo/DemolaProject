@@ -13,13 +13,6 @@ const Container = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
-const Title = styled.div`
-  color: #1e293b;
-  font-size: 1rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-`;
-
 const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);

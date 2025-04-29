@@ -315,39 +315,6 @@ const FormCheckboxLabel = styled.label`
   color: #374151;
 `;
 
-const FrequencySelect = styled.select`
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  width: 100px;
-  background: #f9fafb;
-  transition: all 0.2s;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1.25em;
-  padding-right: 2rem;
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background-color: white;
-  }
-`;
-
-const DateRangeContainer = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-`;
-
-const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
-`;
-
 const RouteTypeContainer = styled.div`
   display: flex;
   gap: 0.5rem;
@@ -367,27 +334,6 @@ const RouteTypeButton = styled.button`
   &:hover {
     background-color: ${props => props.selected ? '#1d4ed8' : '#f8fafc'};
   }
-`;
-
-const StatCard = styled.div`
-  background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1rem;
-`;
-
-const StatTitle = styled.h3`
-  color: #1e293b;
-  font-size: 1rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-`;
-
-const StatValue = styled.span`
-  color: #4b5563;
-  font-size: 1rem;
-  font-weight: 400;
 `;
 
 const formatPrice = (price) => {
@@ -418,14 +364,11 @@ const RouteDetails = ({
   setRoutes,
   selectedRoutes,
   setSelectedRoutes,
-  routeType,
   setRouteType,
   routeTypes,
   setRouteTypes
 }) => {
   // State for sorting functionality
-  const [sortField, setSortField] = useState(null);
-  const [sortDirection, setSortDirection] = useState('asc');
   const [selectedRouteForModification, setSelectedRouteForModification] = useState(null);
   const [selectedTransportTypes, setSelectedTransportTypes] = useState(['truck']);
   const [modifiedWeight, setModifiedWeight] = useState('');
@@ -433,9 +376,6 @@ const RouteDetails = ({
   const [modifiedRouteName, setModifiedRouteName] = useState('');
   const [modifiedFragile, setModifiedFragile] = useState(false);
   const [modifiedSendDate, setModifiedSendDate] = useState('');
-  const [modifiedFrequency, setModifiedFrequency] = useState('weekly');
-  const [modifiedStartDate, setModifiedStartDate] = useState('');
-  const [modifiedEndDate, setModifiedEndDate] = useState('');
   const [selectedRouteForInfo, setSelectedRouteForInfo] = useState(null);
 
   const transportTypes = [
@@ -474,16 +414,6 @@ const RouteDetails = ({
       setSelectedRoutes(new Set(routes.map(route => route.id)));
     } else {
       setSelectedRoutes(new Set());
-    }
-  };
-
-  // Handle sorting when a column header is clicked
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
     }
   };
 
@@ -767,15 +697,6 @@ const RouteDetails = ({
     });
 
     return totalCost;
-  };
-
-  const calculateTotalCost = () => {
-    return routes
-      .filter(route => selectedRoutes.has(route.id))
-      .reduce((total, route) => {
-        const routeType = getRouteType(route.id);
-        return total + calculateCost(route.routeData[routeType], route.weight);
-      }, 0);
   };
 
   const handleDownloadPDF = () => {

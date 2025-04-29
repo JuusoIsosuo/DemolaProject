@@ -70,14 +70,11 @@ const InfoSection = styled.div`
 
 const Map = ({ 
   origin = '', 
-  destination = '', 
-  weight = '', 
-  weightUnit = '', 
+  destination = '',
   routeType = 'lowestEmission',
   routeData,
   routeTypes = {},
-  onCalculateRoute,
-  isLoading 
+  onCalculateRoute
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -413,15 +410,6 @@ const Map = ({
     return `${hours}h ${minutes}min`;
   };
 
-  const formatEmissions = (emissions) => {
-    if (!emissions) return '-';
-    
-    if (emissions >= 1000) {
-      return `${(emissions / 1000).toFixed(2)} kg`;
-    }
-    return `${emissions.toFixed(2)} g`;
-  };
-
   const getRouteColor = (type) => {
     const colors = {
       'sea': '#2563eb',
@@ -440,25 +428,6 @@ const Map = ({
       'rail': [8, 4]
     };
     return dashArrays[type] || [1, 0];
-  };
-
-  const handleRouteClick = (feature, route) => {
-    setSelectedSegment(null);
-    if (route && route.totalTime) {
-      setSelectedRoute({
-        duration: formatDuration(route.totalTime * 3600)
-      });
-    }
-  };
-
-  const translateTransportType = (type) => {
-    const translations = {
-      'truck': 'Maantiekuljetus',
-      'rail': 'Rautatiekuljetus',
-      'sea': 'Merikuljetus',
-      'air': 'Lentokuljetus'
-    };
-    return translations[type] || type;
   };
 
   const toggleCityLabels = () => {
