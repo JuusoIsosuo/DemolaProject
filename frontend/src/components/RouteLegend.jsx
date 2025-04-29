@@ -31,8 +31,8 @@ const ColorBox = styled.div`
 `;
 
 const DashBox = styled.div`
-  width: 24px;
-  height: 2px;
+  width: 36px;
+  height: 4px;
   background: repeating-linear-gradient(
     to right,
     ${props => props.color} 0,
