@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import { PulseLoader } from "react-spinners";
 import axios from 'axios';
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
 
 import AutocompleteInput from './AutocompleteInput';
 
@@ -306,13 +304,12 @@ const Select = styled.select`
 `;
 
 // AddRouteForm component handles adding new routes and generating PDF reports
-const AddRouteForm = ({ routes, setRoutes, selectedRoutes, setSelectedRoutes, isLoading, setIsLoading }) => {
+const AddRouteForm = ({ setRoutes, setSelectedRoutes, isLoading, setIsLoading }) => {
   // State for form inputs
   const [formData, setFormData] = useState({
     weightUnit: 't',
     transportTypes: ['truck', 'sea', 'air', 'rail'], // All types selected by default
   });
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [routeName, setRouteName] = useState('');
   const [isFragile, setFragile] = React.useState(false); // Checkbox state
   const [isContinuousDelivery, setIsContinuousDelivery] = React.useState(false);
