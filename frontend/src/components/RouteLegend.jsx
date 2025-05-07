@@ -22,17 +22,9 @@ const LegendItem = styled.div`
   color: #4b5563;
 `;
 
-const ColorBox = styled.div`
-  width: 16px;
-  height: 16px;
-  border-radius: 2px;
-  background-color: ${props => props.color};
-  border: 1px solid rgba(0, 0, 0, 0.1);
-`;
-
 const DashBox = styled.div`
-  width: 24px;
-  height: 2px;
+  width: 36px;
+  height: 4px;
   background: repeating-linear-gradient(
     to right,
     ${props => props.color} 0,

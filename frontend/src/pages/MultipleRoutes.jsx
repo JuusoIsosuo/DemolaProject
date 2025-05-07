@@ -60,11 +60,16 @@ const MultipleRoutes = () => {
   const [routes, setRoutes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRoutes, setSelectedRoutes] = useState(new Set());
+  const [routeType, setRouteType] = useState('lowestEmission');
+  const [routeTypes, setRouteTypes] = useState({});
 
-  // Filter routes data for selected routes only
+  // Filter routes data for selected routes only and include route IDs
   const selectedRoutesData = routes
     .filter(route => selectedRoutes.has(route.id))
-    .map(route => route.routeData);
+    .map(route => ({
+      id: route.id,
+      routeData: route.routeData
+    }));
 
   return (
     // Main component structure with tabs and content containers
@@ -89,7 +94,10 @@ const MultipleRoutes = () => {
           <>
             <RouteLegend />
             <MapContainer>
-              <Map routeData={selectedRoutesData} />
+              <Map 
+                routeData={selectedRoutesData} 
+                routeTypes={routeTypes}
+              />
             </MapContainer>
           </>
         )}
@@ -98,6 +106,7 @@ const MultipleRoutes = () => {
           <StatsView
             routes={routes}
             selectedRoutes={selectedRoutes}
+            routeTypes={routeTypes}
           />
         )}
 
@@ -115,6 +124,10 @@ const MultipleRoutes = () => {
           setRoutes={setRoutes}
           selectedRoutes={selectedRoutes}
           setSelectedRoutes={setSelectedRoutes}
+          routeType={routeType}
+          setRouteType={setRouteType}
+          routeTypes={routeTypes}
+          setRouteTypes={setRouteTypes}
         />
       </ContentContainer>
     </Container>

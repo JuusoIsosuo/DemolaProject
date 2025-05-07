@@ -45,6 +45,8 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
   const inputRef = useRef(null);
   const selectingRef = useRef(false);
   const justSelectedRef = useRef(false);
+  const latestQueryRef = useRef("");
+  const [isBlurred, setIsBlurred] = useState(false);
 
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -53,9 +55,12 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
         return setSuggestions([]);
       }
 
+      const currentQuery = value;
+      latestQueryRef.current = currentQuery;
+
       try {
         const response = await axios.get(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json`,
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(currentQuery)}.json`,
           {
             params: {
               access_token: import.meta.env.VITE_API_TOKEN,
@@ -69,26 +74,24 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
 
         const formattedSuggestions = response.data.features.map((place) => {
           const context = place.context || [];
-        
           const region = context.find(c => c.id.startsWith("region"));
           const country = context.find(c => c.id.startsWith("country"));
-        
+
           let regionAbbreviation = "";
           let countryCode = "";
-        
+
           if (region?.short_code) {
             const [countryPart, statePart] = region.short_code.split("-");
-        
             if (statePart && /^[A-Z]{2}$/.test(statePart)) {
               regionAbbreviation = statePart.toUpperCase();
               countryCode = countryPart.toUpperCase();
             }
           }
-        
+
           if (!regionAbbreviation && country?.short_code) {
             countryCode = country.short_code.toUpperCase();
           }
-        
+
           let fullName = place.text;
         
           if (regionAbbreviation) {
@@ -99,8 +102,6 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
             fullName += `, ${countryCode}`;
           }
         
-          // If it's a unique place (like Helsinki), omit the region and only show the country.
-          // Ensure that numeric or non-standard region codes are skipped.
           if (!regionAbbreviation && countryCode) {
             fullName = `${place.text}, ${countryCode}`;
           }
@@ -111,7 +112,18 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
             place,
           };
         });
-        setSuggestions(formattedSuggestions);
+
+        if (latestQueryRef.current === currentQuery) {
+          setSuggestions(formattedSuggestions);
+
+          if (isBlurred && formattedSuggestions.length > 0) {
+            justSelectedRef.current = true;
+            onSelect(formattedSuggestions[0].fullName);
+            setSuggestions([]);
+            setIsBlurred(false);
+          }
+        }
+
       } catch (error) {
         console.error("Error fetching suggestions:", error);
       }
@@ -119,7 +131,7 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
 
     const debounce = setTimeout(fetchSuggestions, 300);
     return () => clearTimeout(debounce);
-  }, [value]);
+  }, [value, isBlurred]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -135,15 +147,18 @@ const AutocompleteInput = ({ value, onChange, onSelect, placeholder, InputCompon
   }, []);
 
   const handleBlur = () => {
+    setIsBlurred(true);
     setTimeout(() => {
       if (!selectingRef.current) {
-        if (suggestions.length > 0 && value !== suggestions[0].fullName) {
+        // Only auto-select if we have suggestions and the current value doesn't match any suggestion
+        const hasMatchingSuggestion = suggestions.some(s => s.fullName === value);
+        if (suggestions.length > 0 && !hasMatchingSuggestion) {
           justSelectedRef.current = true;
           onSelect(suggestions[0].fullName);
         }
         setSuggestions([]);
       }
-    }, 100);
+    }, 300); // Increased delay to allow suggestions to load
   };
 
   const handleFocus = () => {

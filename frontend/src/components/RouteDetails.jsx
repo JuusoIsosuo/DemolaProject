@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import styled from '@emotion/styled';
 import axios from 'axios';
 import RouteInfoPopup from './RouteInfoPopup';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Styled components for layout and styling
 const Container = styled.div`
@@ -9,6 +11,7 @@ const Container = styled.div`
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
 `;
 
 const Title = styled.div`
@@ -16,6 +19,9 @@ const Title = styled.div`
   font-size: 1rem;
   font-weight: 500;
   margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 `;
 
 const RouteDetailsTable = styled.div`
@@ -309,37 +315,60 @@ const FormCheckboxLabel = styled.label`
   color: #374151;
 `;
 
-const FrequencySelect = styled.select`
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  width: 100px;
-  background: #f9fafb;
+const RouteTypeContainer = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+`;
+
+const RouteTypeButton = styled.button`
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.25rem;
+  background-color: ${props => props.selected ? 
+    (props.children === 'Lowest Emission' ? '#10b981' : '#3b82f6') 
+    : 'white'};
+  color: ${props => props.selected ? 'white' : '#374151'};
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1.25em;
-  padding-right: 2rem;
+  min-width: 100px;
+
+  &:hover {
+    background-color: ${props => props.selected ? 
+      (props.children === 'Lowest Emission' ? '#059669' : '#2563eb') 
+      : '#f3f4f6'};
+  }
 
   &:focus {
     outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background-color: white;
+    box-shadow: 0 0 0 3px ${props => props.selected ? 
+      (props.children === 'Lowest Emission' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)') 
+      : 'rgba(59, 130, 246, 0.1)'};
   }
 `;
 
-const DateRangeContainer = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-`;
+const formatPrice = (price) => {
+  return `€${(Math.round(price * 100) / 100).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+};
 
-const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
+const DownloadButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
 `;
 
 // RouteDetails component displays a sortable table of routes with their details
@@ -347,23 +376,22 @@ const RouteDetails = ({
   routes,
   setRoutes,
   selectedRoutes,
-  setSelectedRoutes
+  setSelectedRoutes,
+  setRouteType,
+  routeTypes,
+  setRouteTypes
 }) => {
   // State for sorting functionality
-  const [sortField, setSortField] = useState(null);
-  const [sortDirection, setSortDirection] = useState('asc');
   const [selectedRouteForModification, setSelectedRouteForModification] = useState(null);
   const [selectedTransportTypes, setSelectedTransportTypes] = useState(['truck']);
   const [modifiedWeight, setModifiedWeight] = useState('');
   const [modifiedWeightUnit, setModifiedWeightUnit] = useState('t');
   const [modifiedRouteName, setModifiedRouteName] = useState('');
   const [modifiedFragile, setModifiedFragile] = useState(false);
-  const [modifiedContinuousDelivery, setModifiedContinuousDelivery] = useState(false);
-  const [modifiedDeliveryDate, setModifiedDeliveryDate] = useState('');
-  const [modifiedFrequency, setModifiedFrequency] = useState('weekly');
-  const [modifiedStartDate, setModifiedStartDate] = useState('');
-  const [modifiedEndDate, setModifiedEndDate] = useState('');
+  const [modifiedSendDate, setModifiedSendDate] = useState('');
   const [selectedRouteForInfo, setSelectedRouteForInfo] = useState(null);
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
 
   const transportTypes = [
     { id: 'all', label: 'All' },
@@ -404,16 +432,6 @@ const RouteDetails = ({
     }
   };
 
-  // Handle sorting when a column header is clicked
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
   const getCoordinates = async (address) => {
     try {
       const response = await axios.get(
@@ -445,11 +463,25 @@ const RouteDetails = ({
     setModifiedWeightUnit(weightUnit);
     setModifiedRouteName(route.name || `${route.origin} to ${route.destination}`);
     setModifiedFragile(route.isFragile || false);
-    setModifiedContinuousDelivery(route.isContinuousDelivery || false);
-    setModifiedDeliveryDate(route.deliveryDate || '');
-    setModifiedFrequency(route.frequency || 'weekly');
-    setModifiedStartDate(route.startDate || '');
-    setModifiedEndDate(route.endDate || '');
+    
+    // Set send date - use existing send date if available
+    if (route.sendDate) {
+      setModifiedSendDate(route.sendDate);
+    } else {
+      // If no send date exists, calculate it from delivery date
+      if (route.deliveryDate) {
+        const deliveryDate = new Date(route.deliveryDate);
+        const currentRouteType = getRouteType(route.id);
+        const routeData = route.routeData?.[currentRouteType];
+        const totalTime = routeData?.totalTime || 0; // in hours
+        const daysNeeded = Math.ceil(totalTime / 24) + 1;
+        const sendDate = new Date(deliveryDate);
+        sendDate.setDate(deliveryDate.getDate() - daysNeeded);
+        setModifiedSendDate(sendDate.toISOString().split('T')[0]);
+      } else {
+        setModifiedSendDate('');
+      }
+    }
   };
 
   const handleCloseModal = () => {
@@ -519,11 +551,8 @@ const RouteDetails = ({
         weight: `${modifiedWeight}${modifiedWeightUnit}`,
         name: modifiedRouteName,
         isFragile: modifiedFragile,
-        isContinuousDelivery: modifiedContinuousDelivery,
-        deliveryDate: modifiedDeliveryDate,
-        frequency: modifiedFrequency,
-        startDate: modifiedStartDate,
-        endDate: modifiedEndDate
+        sendDate: modifiedSendDate, // Store the send date directly
+        deliveryDate: selectedRouteForModification.deliveryDate // Keep the original delivery date
       };
 
       setRoutes(routes.map(route => 
@@ -545,6 +574,60 @@ const RouteDetails = ({
     setSelectedRouteForInfo(null);
   };
 
+  // Update route type for a specific route
+  const handleRouteTypeChange = (routeId, type) => {
+    setRouteTypes(prev => ({
+      ...prev,
+      [routeId]: type
+    }));
+    
+    // Force a re-render of the map by updating the route type
+    setRouteType(type);
+  };
+
+  // Get the selected route type for a specific route
+  const getRouteType = (routeId) => {
+    return routeTypes[routeId] || 'lowestEmission';
+  };
+
+  const calculateCost = (routeData, weight) => {
+    if (!routeData || !weight) return 0;
+    
+    const weightInTonnes = weight.includes('kg') 
+      ? parseFloat(weight) / 1000 
+      : parseFloat(weight);
+
+    const costPerTonneKm = {
+      truck: 0.115,
+      rail: 0.017,
+      sea: 0.0013,
+      air: 0.18
+    };
+
+    let totalCost = 0;
+    const segments = routeData.geojson?.features || [];
+    
+    segments.forEach(segment => {
+      const distanceKm = segment.properties.distance;
+      const transport = segment.properties.transport.toLowerCase();
+      const costRate = costPerTonneKm[transport] || costPerTonneKm.truck;
+      const segmentCost = distanceKm * weightInTonnes * costRate;
+      totalCost += segmentCost;
+    });
+
+    return totalCost;
+  };
+
+  // Handle sort field change
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
   // Sort routes based on selected field and direction
   const sortedRoutes = [...routes].sort((a, b) => {
     if (!sortField) return 0;
@@ -558,28 +641,33 @@ const RouteDetails = ({
         : bValue.localeCompare(aValue);
     }
     
+    const aRouteType = getRouteType(a.id);
+    const bRouteType = getRouteType(b.id);
+    
     if (sortField === 'emissions') {
       const aWeightInKg = a.weight.includes('kg') ? parseFloat(a.weight) : parseFloat(a.weight) * 1000;
       const bWeightInKg = b.weight.includes('kg') ? parseFloat(b.weight) : parseFloat(b.weight) * 1000;
-      const aEmissionPerKg = a.routeData?.lowestEmission?.totalEmission || 0;
-      const bEmissionPerKg = b.routeData?.lowestEmission?.totalEmission || 0;
+      const aEmissionPerKg = a.routeData?.[aRouteType]?.totalEmission || 0;
+      const bEmissionPerKg = b.routeData?.[bRouteType]?.totalEmission || 0;
       aValue = aEmissionPerKg * aWeightInKg;
       bValue = bEmissionPerKg * bWeightInKg;
     } else if (sortField === 'emissionsPerTonne') {
       const aWeightInTonnes = a.weight.includes('kg') ? parseFloat(a.weight) / 1000 : parseFloat(a.weight);
       const bWeightInTonnes = b.weight.includes('kg') ? parseFloat(b.weight) / 1000 : parseFloat(b.weight);
-      const aEmissionPerKg = a.routeData?.lowestEmission?.totalEmission || 0;
-      const bEmissionPerKg = b.routeData?.lowestEmission?.totalEmission || 0;
+      const aEmissionPerKg = a.routeData?.[aRouteType]?.totalEmission || 0;
+      const bEmissionPerKg = b.routeData?.[bRouteType]?.totalEmission || 0;
       aValue = (aEmissionPerKg * (aWeightInTonnes * 1000)) / aWeightInTonnes;
       bValue = (bEmissionPerKg * (bWeightInTonnes * 1000)) / bWeightInTonnes;
     } else if (sortField === 'cost') {
-      aValue = a.cost || 0;
-      bValue = b.cost || 0;
+      aValue = calculateCost(a.routeData?.[aRouteType], a.weight);
+      bValue = calculateCost(b.routeData?.[bRouteType], b.weight);
     } else if (sortField === 'costPerTonne') {
       const aWeightInTonnes = a.weight.includes('kg') ? parseFloat(a.weight) / 1000 : parseFloat(a.weight);
       const bWeightInTonnes = b.weight.includes('kg') ? parseFloat(b.weight) / 1000 : parseFloat(b.weight);
-      aValue = (a.cost || 0) / aWeightInTonnes;
-      bValue = (b.cost || 0) / bWeightInTonnes;
+      const aCost = calculateCost(a.routeData?.[aRouteType], a.weight);
+      const bCost = calculateCost(b.routeData?.[bRouteType], b.weight);
+      aValue = aCost / aWeightInTonnes;
+      bValue = bCost / bWeightInTonnes;
     } else if (sortField === 'weight') {
       const getWeightInTonnes = (route) => {
         const weight = parseFloat(route.weight);
@@ -595,67 +683,241 @@ const RouteDetails = ({
   });
 
   const calculateLastSendingDate = (route) => {
-    if (!route?.deliveryDate) return '';
+    if (!route?.sendDate) {
+      // If no send date, calculate it from delivery date
+      if (!route?.deliveryDate) {
+        // Return today's date if both dates are empty
+        const today = new Date();
+        const day = today.getDate().toString().padStart(2, '0');
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        return `${day}.${month}.`;
+      }
 
+      try {
+        const deliveryDate = new Date(route.deliveryDate);
+        const currentRouteType = getRouteType(route.id);
+        const routeData = route.routeData?.[currentRouteType];
+        const totalTime = routeData?.totalTime || 0; // in hours
+        
+        // Convert hours to days and round up, then add 1 day buffer
+        const daysNeeded = Math.ceil(totalTime / 24) + 1;
+        
+        // Calculate send date from delivery date
+        const sendDate = new Date(deliveryDate);
+        sendDate.setDate(deliveryDate.getDate() - daysNeeded);
+        
+        // Format date as DD.MM.
+        const day = sendDate.getDate().toString().padStart(2, '0');
+        const month = (sendDate.getMonth() + 1).toString().padStart(2, '0');
+        
+        return `${day}.${month}.`;
+      } catch (error) {
+        console.error('Error calculating send date:', error);
+        return '';
+      }
+    }
+
+    // If send date exists, use it directly
     try {
-      const deliveryDate = new Date(route.deliveryDate);
-      const totalTime = route?.routeData?.lowestEmission?.totalTime || 0;
-      
-      // Convert hours to days and round up, then add 1 day buffer
-      const daysNeeded = Math.ceil(totalTime / 24) + 1;
-      
-      // Calculate last sending date
-      const lastSendingDate = new Date(deliveryDate);
-      lastSendingDate.setDate(deliveryDate.getDate() - daysNeeded);
-      
-      // Format date as DD.MM.
-      const day = lastSendingDate.getDate().toString().padStart(2, '0');
-      const month = (lastSendingDate.getMonth() + 1).toString().padStart(2, '0');
-      
+      const sendDate = new Date(route.sendDate);
+      const day = sendDate.getDate().toString().padStart(2, '0');
+      const month = (sendDate.getMonth() + 1).toString().padStart(2, '0');
       return `${day}.${month}.`;
     } catch (error) {
-      console.error('Error calculating last sending date:', error);
+      console.error('Error formatting send date:', error);
       return '';
     }
+  };
+
+  const handleDownloadPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add a green background rectangle for the title
+    doc.setFillColor(220, 252, 231); // Light green background
+    doc.rect(0, 0, 210, 20, 'F'); // Full width, 20mm height
+    
+    // Add a darker green border
+    doc.setDrawColor(34, 197, 94); // Green border
+    doc.rect(0, 0, 210, 20);
+    
+    // Add the title with green color and larger font
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(22, 163, 74); // Dark green text
+    doc.text("Sustainability Route Report", 105, 12, { align: 'center' });
+    
+    // Add a subtitle
+    doc.setFontSize(12);
+    doc.setTextColor(34, 197, 94); // Medium green
+    doc.text("Environmental Impact Analysis", 105, 18, { align: 'center' });
+
+    const headers = [["Origin", "Destination", "Weight", "CO2 (kg)", "Cost (€)", "CO2/t", "€/t"]];
+    const rows = routes
+      .filter(route => selectedRoutes.has(route.id))
+      .map(route => {
+        const routeType = getRouteType(route.id);
+        const routeData = route.routeData?.[routeType];
+        const weightInKg = route.weight.includes('kg')
+          ? parseFloat(route.weight)
+          : parseFloat(route.weight) * 1000;
+        const weightInTonnes = route.weight.includes('kg')
+          ? parseFloat(route.weight) / 1000
+          : parseFloat(route.weight);
+        const emissionPerKg = routeData?.totalEmission || 0;
+        const totalEmission = emissionPerKg * weightInKg;
+        const cost = calculateCost(routeData, route.weight);
+        const emissionPerTonne = totalEmission / weightInTonnes;
+        const costPerTonne = cost / weightInTonnes;
+
+        return [
+          route.origin,
+          route.destination,
+          route.weight,
+          totalEmission.toFixed(2),
+          cost.toFixed(2),
+          emissionPerTonne.toFixed(2),
+          costPerTonne.toFixed(2)
+        ];
+      });
+
+    const totals = routes
+      .filter(route => selectedRoutes.has(route.id))
+      .reduce((sum, route) => {
+        const routeType = getRouteType(route.id);
+        const routeData = route.routeData?.[routeType];
+        const weightInKg = route.weight.includes('kg')
+          ? parseFloat(route.weight)
+          : parseFloat(route.weight) * 1000;
+        const weightInTonnes = route.weight.includes('kg')
+          ? parseFloat(route.weight) / 1000
+          : parseFloat(route.weight);
+        const emissionPerKg = routeData?.totalEmission || 0;
+        const totalEmission = emissionPerKg * weightInKg;
+        const cost = calculateCost(routeData, route.weight);
+        const emissionPerTonne = totalEmission / weightInTonnes;
+        const costPerTonne = cost / weightInTonnes;
+
+        return {
+          emissions: sum.emissions + totalEmission,
+          cost: sum.cost + cost,
+          emissionPerTonne: sum.emissionPerTonne + emissionPerTonne,
+          costPerTonne: sum.costPerTonne + costPerTonne
+        };
+      }, { emissions: 0, cost: 0, emissionPerTonne: 0, costPerTonne: 0 });
+
+    rows.push([
+      "Total",
+      "",
+      "",
+      Math.round(totals.emissions).toLocaleString('en-US'),
+      Math.round(totals.cost).toLocaleString('en-US'),
+      (totals.emissionPerTonne / selectedRoutes.size).toFixed(2),
+      (totals.costPerTonne / selectedRoutes.size).toFixed(2)
+    ]);
+
+    autoTable(doc, {
+      head: headers,
+      body: rows,
+      startY: 30, // Increased to account for the larger header
+      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [34, 197, 94], // Green header
+        textColor: [255, 255, 255], // White text
+        fontStyle: 'bold'
+      },
+      willDrawCell: (data) => {
+        if (data.row.index === rows.length - 1) {
+          doc.setFont("helvetica", "bold");
+          doc.setFillColor(220, 252, 231); // Light green for totals row
+        }
+      }
+    });
+
+    doc.save("sustainability_report.pdf");
   };
 
   return (
     // Component JSX structure
     <Container>
-      <Title>Route Details</Title>
+      <Title>
+        Route Details
+        <DownloadButton onClick={handleDownloadPDF}>
+          Download PDF
+        </DownloadButton>
+      </Title>
       <RouteDetailsTable>
-        <TableHeader>Route</TableHeader>
-        <TableHeader>Weight</TableHeader>
-        <TableHeader>CO₂/t</TableHeader>
-        <TableHeader>€/t</TableHeader>
-        <TableHeader>Last Send</TableHeader>
+        <TableHeader onClick={() => handleSort('route')} style={{ cursor: 'pointer' }}>
+          Route {sortField === 'route' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
+        <TableHeader onClick={() => handleSort('weight')} style={{ cursor: 'pointer' }}>
+          Weight {sortField === 'weight' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
+        <TableHeader onClick={() => handleSort('emissionsPerTonne')} style={{ cursor: 'pointer' }}>
+          CO₂/t {sortField === 'emissionsPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
+        <TableHeader onClick={() => handleSort('costPerTonne')} style={{ cursor: 'pointer' }}>
+          €/t {sortField === 'costPerTonne' && (sortDirection === 'asc' ? '↑' : '↓')}
+        </TableHeader>
+        <TableHeader>Send date</TableHeader>
         <TableHeader>
-          <Checkbox
-            type="checkbox"
-            checked={selectedRoutes.size === routes.length}
-            onChange={(e) => handleSelectAll(e.target.checked)}
-          />
-          Actions
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
+            <Checkbox
+              type="checkbox"
+              checked={selectedRoutes.size === routes.length}
+              onChange={(e) => handleSelectAll(e.target.checked)}
+            />
+            <span>Actions</span>
+            {selectedRoutes.size > 0 && (
+              <ActionButton 
+                onClick={() => {
+                  setRoutes(routes.filter(route => !selectedRoutes.has(route.id)));
+                  setSelectedRoutes(new Set());
+                }}
+                style={{ marginLeft: 'auto' }}
+              >
+                Delete Selected
+              </ActionButton>
+            )}
+          </div>
         </TableHeader>
 
         {sortedRoutes.map((route) => {
+          const currentRouteType = getRouteType(route.id);
+          const routeData = route.routeData?.[currentRouteType];
+          
           const weightInKg = route.weight.includes('kg')
             ? parseFloat(route.weight)
             : parseFloat(route.weight) * 1000;
           const weightInTonnes = route.weight.includes('kg')
             ? parseFloat(route.weight) / 1000
             : parseFloat(route.weight);
-          const emissionPerKg = route.routeData?.lowestEmission?.totalEmission || 0;
+          const emissionPerKg = routeData?.totalEmission || 0;
           const totalEmission = emissionPerKg * weightInKg;
           const emissionPerTonne = totalEmission / weightInTonnes;
-          const costPerTonne = (route.cost || 0) / weightInTonnes;
+          const costPerTonne = calculateCost(routeData, route.weight) / weightInTonnes;
 
           return (
             <React.Fragment key={route.id}>
-              <TableCell>{route.name || `${route.origin} to ${route.destination}`}</TableCell>
+              <TableCell>
+                {route.name || `${route.origin} to ${route.destination}`}
+                <RouteTypeContainer>
+                  <RouteTypeButton
+                    selected={currentRouteType === 'lowestEmission'}
+                    onClick={() => handleRouteTypeChange(route.id, 'lowestEmission')}
+                  >
+                    Lowest Emission
+                  </RouteTypeButton>
+                  <RouteTypeButton
+                    selected={currentRouteType === 'fastest'}
+                    onClick={() => handleRouteTypeChange(route.id, 'fastest')}
+                  >
+                    Fastest
+                  </RouteTypeButton>
+                </RouteTypeContainer>
+              </TableCell>
               <TableCell>{route.weight}</TableCell>
               <TableCell>{emissionPerTonne.toFixed(2)}</TableCell>
-              <TableCell>{costPerTonne.toFixed(2)}</TableCell>
+              <TableCell>{formatPrice(costPerTonne)}</TableCell>
               <TableCell>{calculateLastSendingDate(route)}</TableCell>
               <TableCell>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -690,6 +952,7 @@ const RouteDetails = ({
         <RouteInfoPopup
           route={selectedRouteForInfo}
           onClose={handleCloseInfo}
+          routeType={getRouteType(selectedRouteForInfo.id)}
         />
       )}
 
@@ -736,65 +999,16 @@ const RouteDetails = ({
             </ModalSection>
 
             <ModalSection>
-              <ModalLabel>Delivery Date</ModalLabel>
+              <ModalLabel>Send Date</ModalLabel>
               <ModalInput
                 type="date"
-                value={modifiedDeliveryDate}
-                onChange={(e) => setModifiedDeliveryDate(e.target.value)}
+                value={modifiedSendDate}
+                onChange={(e) => setModifiedSendDate(e.target.value)}
                 style={{ width: '200px' }}
               />
             </ModalSection>
 
             <ModalSection>
-              <FormCheckboxContainer>
-                <FormCheckbox
-                  type="checkbox"
-                  checked={modifiedContinuousDelivery}
-                  onChange={(e) => setModifiedContinuousDelivery(e.target.checked)}
-                  id="modify-continuous-delivery"
-                />
-                <FormCheckboxLabel htmlFor="modify-continuous-delivery">
-                  Continuous Delivery
-                </FormCheckboxLabel>
-              </FormCheckboxContainer>
-
-              {modifiedContinuousDelivery && (
-                <>
-                  <FormGroup>
-                    <ModalLabel>Frequency</ModalLabel>
-                    <FrequencySelect
-                      value={modifiedFrequency}
-                      onChange={(e) => setModifiedFrequency(e.target.value)}
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="biweekly">Bi-weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </FrequencySelect>
-                  </FormGroup>
-
-                  <FormGroup>
-                    <ModalLabel>Date Range</ModalLabel>
-                    <DateRangeContainer>
-                      <ModalInput
-                        type="date"
-                        value={modifiedStartDate}
-                        onChange={(e) => setModifiedStartDate(e.target.value)}
-                        placeholder="Start Date"
-                        style={{ width: '150px' }}
-                      />
-                      <ModalInput
-                        type="date"
-                        value={modifiedEndDate}
-                        onChange={(e) => setModifiedEndDate(e.target.value)}
-                        placeholder="End Date"
-                        style={{ width: '150px' }}
-                      />
-                    </DateRangeContainer>
-                  </FormGroup>
-                </>
-              )}
-
               <FormCheckboxContainer>
                 <FormCheckbox
                   type="checkbox"

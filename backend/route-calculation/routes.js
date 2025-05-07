@@ -6,18 +6,18 @@ const supabase = require('./config/database');
 // Emission rates in g CO2e per ton-km
 const EMISSION_RATES = {
   truck: {
-    euroI: 29,
-    euroII: 30,
-    euroIII: 31,
-    euroIV: 30,
-    euroV: 30,
-    euroVI: 29
+    euroI: 36,
+    euroII: 37,
+    euroIII: 38,
+    euroIV: 37,
+    euroV: 37,
+    euroVI: 36
   },
   rail: {
-    electric: 0.001,
-    diesel: 17.8
+    electric: 12.6,
+    diesel: 30.4
   },
-  sea: 28,     // Container ship emission rate
+  sea: 17,     // Container ship emission rate
   air: 595        // Cargo aircraft emission rate
 };
 
