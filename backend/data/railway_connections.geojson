@@ -30,6 +30,8 @@
         [13.4, 52.5],
         [14.4, 50.1],
         [18.3, 49.8]
-      ] } }
+      ] } },
+      { "type": "Feature", "properties": { "route": ["Warsaw", "Ostrava"] }, "geometry": { "type": "LineString", "coordinates": [[21.0122, 52.2298], [18.3, 49.8]] } },
+      { "type": "Feature", "properties": { "route": ["Gdańsk", "Warsaw"] }, "geometry": { "type": "LineString", "coordinates": [[18.6466, 54.3520], [21.0122, 52.2298]] } }
   ]
 }
